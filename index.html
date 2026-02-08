@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>リアルタイム株式トレードゲーム</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: #fff;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.header {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 8px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 48px;
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-left .logo { font-size: 20px; }
+.header-left h1 { font-size: 16px; font-weight: 700; }
+.header-right { display: flex; gap: 12px; align-items: center; }
+.stat-box {
+  text-align: center;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+}
+.stat-box .label { font-size: 10px; color: rgba(255,255,255,0.6); }
+.stat-box .value { font-size: 15px; font-weight: 700; }
+.stat-box .value.positive { color: #00e676; }
+.stat-box .value.negative { color: #ff5252; }
+.timer-box .value { color: #ffd740; }
+
+.main {
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  gap: 12px;
+  padding: 12px;
+  height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+/* 銘柄リスト */
+.stock-list {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 10px;
+  overflow-y: auto;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.stock-list h2 { font-size: 13px; margin-bottom: 8px; color: rgba(255,255,255,0.7); }
+.stock-item {
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 4px;
+  border: 2px solid transparent;
+  background: rgba(255,255,255,0.03);
+}
+.stock-item:hover { background: rgba(255,255,255,0.08); }
+.stock-item.selected { border-color: #7c4dff; background: rgba(124,77,255,0.15); }
+.stock-item .stock-name { font-weight: 700; font-size: 13px; }
+.stock-item .stock-ticker { font-size: 11px; color: rgba(255,255,255,0.5); }
+.stock-item .stock-price { font-size: 15px; font-weight: 700; }
+.stock-item .stock-change { font-size: 11px; margin-top: 1px; }
+.stock-item .stock-change.up { color: #00e676; }
+.stock-item .stock-change.down { color: #ff5252; }
+.si-row { display: flex; justify-content: space-between; align-items: center; }
+
+/* チャートエリア */
+.chart-area {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.chart-header .stock-info h2 { font-size: 16px; font-weight: 700; }
+.chart-header .stock-info .current-price { font-size: 24px; font-weight: 800; margin-top: 2px; }
+.chart-header .stock-info .price-change { font-size: 13px; margin-top: 1px; }
+.chart-header .stock-info .price-change.up { color: #00e676; }
+.chart-header .stock-info .price-change.down { color: #ff5252; }
+.chart-canvas-container { flex: 1; position: relative; min-height: 0; }
+.chart-canvas-container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+/* 取引パネル */
+.trade-panel { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.panel-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.panel-card h3 { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
+
+/* 売買ボタン（メイン） */
+.trade-buttons { display: flex; gap: 6px; margin-bottom: 10px; }
+.btn-trade {
+  flex: 1;
+  padding: 12px 8px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-trade:hover { transform: translateY(-1px); opacity: 0.9; }
+.btn-trade:active { transform: translateY(0); }
+.btn-trade.buy-btn { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
+.btn-trade.sell-btn { background: linear-gradient(135deg, #ff5252, #d50000); color: #fff; }
+.btn-trade.settle-btn { background: linear-gradient(135deg, #ffd740, #ffc400); color: #000; }
+
+/* 設定エリア */
+.trade-settings { display: flex; gap: 8px; margin-bottom: 8px; }
+.setting-group { flex: 1; }
+.setting-group label { display: block; font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+.setting-group input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+.setting-group input:focus { border-color: #7c4dff; }
+.quick-btns { display: flex; gap: 4px; margin-top: 4px; }
+.quick-btns button {
+  flex: 1;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+  cursor: pointer;
+}
+.quick-btns button:hover { background: rgba(255,255,255,0.08); }
+.quick-btns button.selected { border-color: #7c4dff; background: rgba(124,77,255,0.2); color: #fff; }
+
+.order-info {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  padding: 4px 0;
+}
+.order-info span { color: #fff; font-weight: 600; }
+
+/* ポジション */
+.positions-list { max-height: 180px; overflow-y: auto; }
+.position-item {
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.pos-header { display: flex; justify-content: space-between; align-items: center; }
+.pos-ticker { font-weight: 700; font-size: 13px; }
+.pos-pnl { font-weight: 600; }
+.pos-pnl.up { color: #00e676; }
+.pos-pnl.down { color: #ff5252; }
+.pos-details { display: flex; justify-content: space-between; margin-top: 3px; color: rgba(255,255,255,0.5); font-size: 11px; }
+.btn-close-pos {
+  padding: 3px 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 5px;
+  background: transparent;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+.btn-close-pos:hover { background: rgba(255,255,255,0.1); }
+
+/* 取引履歴 */
+.history-list { max-height: 120px; overflow-y: auto; }
+.history-item {
+  font-size: 11px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  justify-content: space-between;
+}
+.h-action { font-weight: 600; }
+.h-action.buy { color: #00e676; }
+.h-action.sell { color: #ff5252; }
+
+.no-positions { text-align: center; padding: 16px; color: rgba(255,255,255,0.3); font-size: 12px; }
+
+/* 開始画面 */
+.start-screen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; transition: opacity 0.5s;
+}
+.start-screen.hidden { opacity: 0; pointer-events: none; }
+.start-content { text-align: center; max-width: 480px; padding: 32px; }
+.start-content .logo-big { font-size: 56px; margin-bottom: 12px; }
+.start-content h1 { font-size: 32px; font-weight: 800; margin-bottom: 6px; }
+.start-content p { color: rgba(255,255,255,0.6); margin-bottom: 24px; font-size: 15px; }
+.start-content .rules {
+  text-align: left; background: rgba(255,255,255,0.05);
+  border-radius: 14px; padding: 16px; margin-bottom: 24px;
+}
+.start-content .rules h3 { margin-bottom: 10px; font-size: 15px; }
+.start-content .rules li { margin-bottom: 6px; padding-left: 6px; font-size: 13px; color: rgba(255,255,255,0.8); list-style: none; }
+.start-content .rules li::before { content: '• '; color: #7c4dff; }
+.time-select { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.time-select button {
+  padding: 8px 20px; border: 2px solid rgba(255,255,255,0.2); border-radius: 10px;
+  background: transparent; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.time-select button.selected { border-color: #7c4dff; background: rgba(124,77,255,0.2); }
+.time-select button:hover { border-color: #7c4dff; }
+.btn-start {
+  padding: 14px 56px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, #7c4dff, #651fff);
+  color: #fff; font-size: 18px; font-weight: 700; cursor: pointer;
+}
+.btn-start:hover { transform: scale(1.05); box-shadow: 0 8px 32px rgba(124,77,255,0.4); }
+
+/* 結果画面 */
+.result-screen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+  display: none; align-items: center; justify-content: center; z-index: 1000;
+}
+.result-screen.show { display: flex; }
+.result-content {
+  text-align: center; max-width: 420px; padding: 40px;
+  background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+}
+.result-content .result-icon { font-size: 56px; margin-bottom: 12px; }
+.result-content h2 { font-size: 24px; margin-bottom: 6px; }
+.result-amount { font-size: 36px; font-weight: 800; margin: 12px 0; }
+.result-amount.positive { color: #00e676; }
+.result-amount.negative { color: #ff5252; }
+.result-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+.result-stat { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; }
+.result-stat .rs-label { font-size: 11px; color: rgba(255,255,255,0.5); }
+.result-stat .rs-value { font-size: 16px; font-weight: 700; margin-top: 3px; }
+.btn-restart {
+  padding: 12px 40px; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, #7c4dff, #651fff);
+  color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.btn-restart:hover { transform: scale(1.05); }
+
+/* トースト */
+.toast-container { position: fixed; top: 56px; right: 16px; z-index: 500; display: flex; flex-direction: column; gap: 6px; }
+.toast {
+  padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+}
+.toast.success { background: rgba(0,230,118,0.2); border: 1px solid #00e676; }
+.toast.error { background: rgba(255,82,82,0.2); border: 1px solid #ff5252; }
+.toast.info { background: rgba(124,77,255,0.2); border: 1px solid #7c4dff; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; } }
+
+@media (max-width: 1100px) {
+  .main { grid-template-columns: 1fr; height: auto; overflow-y: auto; }
+  .stock-list { max-height: 180px; }
+  .chart-canvas-container { min-height: 250px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 開始画面 -->
+<div class="start-screen" id="startScreen">
+  <div class="start-content">
+    <div class="logo-big">📈</div>
+    <h1>株トレードシミュレーター</h1>
+    <p>リアルタイムに変動する株価で売買して利益を目指そう！</p>
+    <div class="rules">
+      <h3>⚡ ゲームルール</h3>
+      <ul>
+        <li>初期資金 ¥1,000,000 でスタート</li>
+        <li>6つの銘柄からリアルタイムで売買</li>
+        <li>買い（ロング）も空売り（ショート）もOK</li>
+        <li>レバレッジ（1〜5倍）でリスク調整</li>
+        <li>制限時間内に最大利益を目指せ！</li>
+        <li>長い制限時間ほど株価はゆっくり動く</li>
+      </ul>
+    </div>
+    <div class="time-select" id="timeSelect">
+      <button data-time="180" class="selected">3分</button>
+      <button data-time="300">5分</button>
+      <button data-time="600">10分</button>
+    </div>
+    <button class="btn-start" id="btnStart">ゲーム開始</button>
+  </div>
+</div>
+
+<!-- 結果画面 -->
+<div class="result-screen" id="resultScreen">
+  <div class="result-content">
+    <div class="result-icon" id="resultIcon">🏆</div>
+    <h2 id="resultTitle">ゲーム終了！</h2>
+    <div class="result-amount" id="resultAmount"></div>
+    <div class="result-stats">
+      <div class="result-stat"><div class="rs-label">最終資産</div><div class="rs-value" id="rsFinalAsset">-</div></div>
+      <div class="result-stat"><div class="rs-label">決済回数</div><div class="rs-value" id="rsTradeCount">-</div></div>
+      <div class="result-stat"><div class="rs-label">勝率</div><div class="rs-value" id="rsWinRate">-</div></div>
+      <div class="result-stat"><div class="rs-label">最大利益</div><div class="rs-value" id="rsMaxProfit">-</div></div>
+    </div>
+    <button class="btn-restart" id="btnRestart">もう一度プレイ</button>
+  </div>
+</div>
+
+<!-- メイン画面 -->
+<div class="header">
+  <div class="header-left"><span class="logo">📊</span><h1>Stock Trader</h1></div>
+  <div class="header-right">
+    <div class="stat-box timer-box"><div class="label">残り時間</div><div class="value" id="timerDisplay">03:00</div></div>
+    <div class="stat-box"><div class="label">総資産</div><div class="value" id="totalAssetDisplay">¥1,000,000</div></div>
+    <div class="stat-box"><div class="label">現金</div><div class="value" id="cashDisplay">¥1,000,000</div></div>
+    <div class="stat-box"><div class="label">確定損益</div><div class="value" id="pnlDisplay">¥0</div></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="stock-list">
+    <h2>📋 銘柄一覧</h2>
+    <div id="stockListContainer"></div>
+  </div>
+
+  <div class="chart-area">
+    <div class="chart-header">
+      <div class="stock-info">
+        <h2 id="chartStockName">-</h2>
+        <div class="current-price" id="chartPrice">-</div>
+        <div class="price-change" id="chartChange">-</div>
+      </div>
+    </div>
+    <div class="chart-canvas-container">
+      <canvas id="priceChart"></canvas>
+    </div>
+  </div>
+
+  <div class="trade-panel">
+    <!-- 注文パネル -->
+    <div class="panel-card">
+      <h3>📝 注文</h3>
+      <div class="trade-settings">
+        <div class="setting-group">
+          <label>数量</label>
+          <input type="number" id="orderQuantity" value="100" min="1" step="10">
+          <div class="quick-btns">
+            <button onclick="setQuantity(10)">10</button>
+            <button onclick="setQuantity(50)">50</button>
+            <button onclick="setQuantity(100)">100</button>
+            <button onclick="setQuantity(500)">500</button>
+          </div>
+        </div>
+        <div class="setting-group">
+          <label>レバレッジ</label>
+          <div class="quick-btns" id="leverageBtns" style="margin-top:0;">
+            <button class="selected" onclick="setLeverage(1)">1x</button>
+            <button onclick="setLeverage(2)">2x</button>
+            <button onclick="setLeverage(3)">3x</button>
+            <button onclick="setLeverage(5)">5x</button>
+          </div>
+        </div>
+      </div>
+      <div class="order-info">
+        必要資金: <span id="osTotal">-</span>
+      </div>
+      <div class="trade-buttons">
+        <button class="btn-trade buy-btn" onclick="executeOrder('buy')">買い</button>
+        <button class="btn-trade sell-btn" onclick="executeOrder('sell')">空売り</button>
+      </div>
+    </div>
+
+    <!-- ポジション -->
+    <div class="panel-card">
+      <h3>📊 保有ポジション</h3>
+      <div class="positions-list" id="positionsList">
+        <div class="no-positions">ポジションなし</div>
+      </div>
+    </div>
+
+    <!-- 取引履歴 -->
+    <div class="panel-card">
+      <h3>📜 取引履歴</h3>
+      <div class="history-list" id="historyList">
+        <div class="no-positions">まだ取引がありません</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==================== 銘柄データ ====================
+const STOCKS = [
+  { ticker: 'TNET', name: 'テックネット', sector: 'IT', basePrice: 8500, volatility: 0.015, trend: 0.0002 },
+  { ticker: 'GFIN', name: 'グローバル金融', sector: '金融', basePrice: 3200, volatility: 0.01, trend: -0.0001 },
+  { ticker: 'MEDI', name: 'メディライフ', sector: '医薬品', basePrice: 5800, volatility: 0.012, trend: 0.00015 },
+  { ticker: 'ENRG', name: 'エナジーパワー', sector: 'エネルギー', basePrice: 2100, volatility: 0.018, trend: 0.0001 },
+  { ticker: 'FOOD', name: 'フードデリ', sector: '食品', basePrice: 4500, volatility: 0.008, trend: 0.00005 },
+  { ticker: 'AUTO', name: 'オートモーティブ', sector: '自動車', basePrice: 6800, volatility: 0.014, trend: -0.00008 },
+];
+
+// 時間モードごとのボラティリティ倍率と更新間隔
+const TIME_CONFIGS = {
+  180:  { volScale: 1.0,  tickMs: 300 },   // 3分: 速い
+  300:  { volScale: 0.6,  tickMs: 400 },   // 5分: 普通
+  600:  { volScale: 0.35, tickMs: 500 },   // 10分: ゆっくり
+};
+
+// ==================== ゲーム状態 ====================
+const gameState = {
+  running: false,
+  cash: 1000000,
+  initialCash: 1000000,
+  realizedPnl: 0, // 確定損益のみ
+  positions: [],
+  history: [],
+  timeLeft: 180,
+  totalTime: 180,
+  selectedStock: 0,
+  leverage: 1,
+  settlementCount: 0,
+  winCount: 0,
+  maxProfit: 0,
+};
+
+let stockData = {};
+let priceHistories = {};
+let tickInterval = null;
+let timerInterval = null;
+let rafId = null;
+let needsRender = true;
+
+// DOM キャッシュ
+const DOM = {};
+function cacheDom() {
+  DOM.timer = document.getElementById('timerDisplay');
+  DOM.totalAsset = document.getElementById('totalAssetDisplay');
+  DOM.cash = document.getElementById('cashDisplay');
+  DOM.pnl = document.getElementById('pnlDisplay');
+  DOM.chartName = document.getElementById('chartStockName');
+  DOM.chartPrice = document.getElementById('chartPrice');
+  DOM.chartChange = document.getElementById('chartChange');
+  DOM.osTotal = document.getElementById('osTotal');
+  DOM.stockList = document.getElementById('stockListContainer');
+  DOM.positions = document.getElementById('positionsList');
+  DOM.history = document.getElementById('historyList');
+  DOM.canvas = document.getElementById('priceChart');
+  DOM.ctx = DOM.canvas.getContext('2d');
+  DOM.canvasContainer = DOM.canvas.parentElement;
+  DOM.toasts = document.getElementById('toastContainer');
+}
+
+// ==================== 初期化 ====================
+function initStocks() {
+  stockData = {};
+  priceHistories = {};
+  STOCKS.forEach(s => {
+    const startPrice = s.basePrice * (0.9 + Math.random() * 0.2);
+    stockData[s.ticker] = {
+      ...s, price: startPrice, prevPrice: startPrice, openPrice: startPrice,
+      high: startPrice, low: startPrice, momentum: 0,
+      microTrend: (Math.random() - 0.5) * 0.001,
+    };
+    priceHistories[s.ticker] = [startPrice];
+  });
+}
+
+// ==================== 価格更新 ====================
+function updatePrices() {
+  const config = TIME_CONFIGS[gameState.totalTime] || TIME_CONFIGS[180];
+  const volScale = config.volScale;
+
+  for (let i = 0; i < STOCKS.length; i++) {
+    const s = STOCKS[i];
+    const d = stockData[s.ticker];
+    d.prevPrice = d.price;
+
+    const noise = (Math.random() - 0.5) * 2 * d.volatility * volScale;
+    d.momentum = d.momentum * 0.95 + noise * 0.05;
+
+    let spike = 0;
+    if (Math.random() < 0.005) spike = (Math.random() - 0.5) * d.volatility * volScale * 4;
+    if (Math.random() < 0.02) d.microTrend = (Math.random() - 0.5) * 0.002 * volScale;
+
+    const change = d.price * (noise + d.momentum + d.trend * volScale + d.microTrend + spike);
+    d.price = Math.max(d.price * 0.5, d.price + change);
+    d.price = Math.round(d.price * 10) / 10;
+
+    if (d.price > d.high) d.high = d.price;
+    if (d.price < d.low) d.low = d.price;
+
+    const hist = priceHistories[s.ticker];
+    hist.push(d.price);
+    if (hist.length > 200) hist.shift();
+  }
+  needsRender = true;
+}
+
+// ==================== 描画（requestAnimationFrame） ====================
+function renderLoop() {
+  if (!gameState.running) return;
+  if (needsRender) {
+    needsRender = false;
+    updateStockListDOM();
+    updateChartHeader();
+    updateOrderInfo();
+    updatePositionsDOM();
+    updateAssetDisplay();
+    drawChart();
+  }
+  rafId = requestAnimationFrame(renderLoop);
+}
+
+// ==================== 銘柄リスト（差分更新） ====================
+let stockItemEls = [];
+function buildStockList() {
+  DOM.stockList.innerHTML = '';
+  stockItemEls = [];
+  STOCKS.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'stock-item';
+    item.onclick = () => selectStock(i);
+    item.innerHTML = `<div class="si-row"><div><div class="stock-name">${s.name}</div><div class="stock-ticker">${s.ticker} / ${s.sector}</div></div><div style="text-align:right"><div class="stock-price"></div><div class="stock-change"></div></div></div>`;
+    DOM.stockList.appendChild(item);
+    stockItemEls.push({
+      el: item,
+      priceEl: item.querySelector('.stock-price'),
+      changeEl: item.querySelector('.stock-change'),
+    });
+  });
+}
+function updateStockListDOM() {
+  for (let i = 0; i < STOCKS.length; i++) {
+    const s = STOCKS[i];
+    const d = stockData[s.ticker];
+    const se = stockItemEls[i];
+    const isUp = d.price >= d.openPrice;
+    const changePct = ((d.price - d.openPrice) / d.openPrice * 100).toFixed(2);
+    const changeAmt = (d.price - d.openPrice).toFixed(1);
+
+    se.priceEl.textContent = `¥${d.price.toLocaleString()}`;
+    se.changeEl.textContent = `${isUp ? '▲' : '▼'} ${changeAmt > 0 ? '+' : ''}${changeAmt} (${changePct > 0 ? '+' : ''}${changePct}%)`;
+    se.changeEl.className = `stock-change ${isUp ? 'up' : 'down'}`;
+
+    const selected = i === gameState.selectedStock;
+    if (selected && !se.el.classList.contains('selected')) se.el.classList.add('selected');
+    else if (!selected && se.el.classList.contains('selected')) se.el.classList.remove('selected');
+  }
+}
+
+function updateChartHeader() {
+  const s = STOCKS[gameState.selectedStock];
+  const d = stockData[s.ticker];
+  const isUp = d.price >= d.openPrice;
+  const changePct = ((d.price - d.openPrice) / d.openPrice * 100).toFixed(2);
+  const changeAmt = (d.price - d.openPrice).toFixed(1);
+
+  DOM.chartName.textContent = `${s.name} (${s.ticker})`;
+  DOM.chartPrice.textContent = `¥${d.price.toLocaleString()}`;
+  DOM.chartChange.textContent = `${isUp ? '▲' : '▼'} ${changeAmt > 0 ? '+' : ''}${changeAmt} (${changePct > 0 ? '+' : ''}${changePct}%)`;
+  DOM.chartChange.className = `price-change ${isUp ? 'up' : 'down'}`;
+}
+
+// ==================== チャート描画 ====================
+let lastCanvasW = 0, lastCanvasH = 0;
+function drawChart() {
+  const ctx = DOM.ctx;
+  const container = DOM.canvasContainer;
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  if (w === 0 || h === 0) return;
+
+  // キャンバスリサイズ（必要時のみ）
+  const dpr = window.devicePixelRatio || 1;
+  if (lastCanvasW !== w || lastCanvasH !== h) {
+    DOM.canvas.width = w * dpr;
+    DOM.canvas.height = h * dpr;
+    lastCanvasW = w;
+    lastCanvasH = h;
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const s = STOCKS[gameState.selectedStock];
+  const prices = priceHistories[s.ticker];
+  const len = prices.length;
+  if (len < 2) return;
+
+  let minP = Infinity, maxP = -Infinity;
+  for (let i = 0; i < len; i++) {
+    if (prices[i] < minP) minP = prices[i];
+    if (prices[i] > maxP) maxP = prices[i];
+  }
+  minP *= 0.999;
+  maxP *= 1.001;
+  const range = maxP - minP || 1;
+
+  const pad = { top: 16, bottom: 20, left: 50, right: 16 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+
+  // グリッド
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.font = '10px -apple-system,sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (ch / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+    ctx.fillText(`¥${(maxP - (range / 4) * i).toFixed(0)}`, pad.left - 6, y + 3);
+  }
+
+  const isUp = prices[len - 1] >= prices[0];
+  const gc = isUp ? [0, 230, 118] : [255, 82, 82];
+
+  // パス計算
+  const xStep = cw / (len - 1);
+  ctx.beginPath();
+  for (let i = 0; i < len; i++) {
+    const x = pad.left + i * xStep;
+    const y = pad.top + (1 - (prices[i] - minP) / range) * ch;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  // エリア塗り
+  const lastX = pad.left + (len - 1) * xStep;
+  const gradPath = ctx.currentTransform; // save path
+  ctx.lineTo(lastX, pad.top + ch);
+  ctx.lineTo(pad.left, pad.top + ch);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
+  grad.addColorStop(0, `rgba(${gc.join(',')},0.25)`);
+  grad.addColorStop(1, `rgba(${gc.join(',')},0.02)`);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // ライン
+  ctx.beginPath();
+  for (let i = 0; i < len; i++) {
+    const x = pad.left + i * xStep;
+    const y = pad.top + (1 - (prices[i] - minP) / range) * ch;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = isUp ? '#00e676' : '#ff5252';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 現在値ドット
+  const lastY = pad.top + (1 - (prices[len - 1] - minP) / range) * ch;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = isUp ? '#00e676' : '#ff5252';
+  ctx.fill();
+
+  // ポジションライン
+  for (let pi = 0; pi < gameState.positions.length; pi++) {
+    const pos = gameState.positions[pi];
+    if (pos.ticker !== s.ticker) continue;
+    const posY = pad.top + (1 - (pos.entryPrice - minP) / range) * ch;
+    if (posY < pad.top || posY > pad.top + ch) continue;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = pos.type === 'buy' ? 'rgba(0,230,118,0.5)' : 'rgba(255,82,82,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, posY);
+    ctx.lineTo(w - pad.right, posY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = pos.type === 'buy' ? '#00e676' : '#ff5252';
+    ctx.font = '9px -apple-system,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${pos.type === 'buy' ? '買' : '売'} ¥${pos.entryPrice.toFixed(0)}`, pad.left + 3, posY - 3);
+  }
+}
+
+// ==================== 注文情報 ====================
+function updateOrderInfo() {
+  const s = STOCKS[gameState.selectedStock];
+  const d = stockData[s.ticker];
+  const qty = parseInt(document.getElementById('orderQuantity').value) || 0;
+  const required = (d.price * qty) / gameState.leverage;
+  DOM.osTotal.textContent = `¥${Math.round(required).toLocaleString()}`;
+}
+
+// ==================== ポジション（差分更新） ====================
+function updatePositionsDOM() {
+  const container = DOM.positions;
+  if (gameState.positions.length === 0) {
+    if (container.childElementCount !== 1 || !container.querySelector('.no-positions')) {
+      container.innerHTML = '<div class="no-positions">ポジションなし</div>';
+    }
+    return;
+  }
+  // 簡易差分: 子要素数が合わなければ再構築
+  if (container.childElementCount !== gameState.positions.length) {
+    container.innerHTML = '';
+    gameState.positions.forEach((pos, i) => {
+      const item = document.createElement('div');
+      item.className = 'position-item';
+      item.setAttribute('data-idx', i);
+      item.innerHTML = `<div class="pos-header"><span class="pos-ticker"></span><div><span class="pos-pnl"></span><button class="btn-close-pos" onclick="closePosition(${i})">決済</button></div></div><div class="pos-details"><span class="pos-info"></span><span class="pos-prices"></span></div>`;
+      container.appendChild(item);
+    });
+  }
+  // 値更新
+  const items = container.children;
+  for (let i = 0; i < gameState.positions.length; i++) {
+    const pos = gameState.positions[i];
+    const d = stockData[pos.ticker];
+    const pnl = pos.type === 'buy'
+      ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
+      : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
+    const isUp = pnl >= 0;
+    const item = items[i];
+    item.querySelector('.pos-ticker').textContent = `${pos.type === 'buy' ? '🟢' : '🔴'} ${pos.ticker}`;
+    const pnlEl = item.querySelector('.pos-pnl');
+    pnlEl.textContent = `${isUp ? '+' : ''}¥${Math.round(pnl).toLocaleString()}`;
+    pnlEl.className = `pos-pnl ${isUp ? 'up' : 'down'}`;
+    item.querySelector('.pos-info').textContent = `${pos.quantity}株 × ${pos.leverage}x`;
+    item.querySelector('.pos-prices').textContent = `取得: ¥${pos.entryPrice.toFixed(0)} → 現在: ¥${d.price.toFixed(0)}`;
+  }
+}
+
+// ==================== 資産表示 ====================
+function updateAssetDisplay() {
+  let unrealized = 0;
+  for (let i = 0; i < gameState.positions.length; i++) {
+    const pos = gameState.positions[i];
+    const d = stockData[pos.ticker];
+    unrealized += pos.type === 'buy'
+      ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
+      : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
+  }
+
+  const totalAsset = gameState.cash + unrealized;
+  DOM.totalAsset.textContent = `¥${Math.round(totalAsset).toLocaleString()}`;
+  DOM.cash.textContent = `¥${Math.round(gameState.cash).toLocaleString()}`;
+
+  // 確定損益のみ表示
+  const rp = gameState.realizedPnl;
+  const isUp = rp >= 0;
+  DOM.pnl.textContent = `${isUp ? '+' : ''}¥${Math.round(rp).toLocaleString()}`;
+  DOM.pnl.className = `value ${isUp ? 'positive' : 'negative'}`;
+
+  if (rp > gameState.maxProfit) gameState.maxProfit = rp;
+}
+
+function updateTimer() {
+  const min = Math.floor(gameState.timeLeft / 60);
+  const sec = gameState.timeLeft % 60;
+  DOM.timer.textContent = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+// ==================== 操作 ====================
+function selectStock(index) {
+  gameState.selectedStock = index;
+  needsRender = true;
+}
+
+function setQuantity(qty) {
+  document.getElementById('orderQuantity').value = qty;
+  needsRender = true;
+}
+
+function setLeverage(lev) {
+  gameState.leverage = lev;
+  document.querySelectorAll('#leverageBtns button').forEach(btn => {
+    btn.classList.toggle('selected', btn.textContent === `${lev}x`);
+  });
+  needsRender = true;
+}
+
+function executeOrder(type) {
+  if (!gameState.running) return;
+  const s = STOCKS[gameState.selectedStock];
+  const d = stockData[s.ticker];
+  const qty = parseInt(document.getElementById('orderQuantity').value) || 0;
+  if (qty <= 0) { showToast('数量を入力してください', 'error'); return; }
+
+  const requiredCash = (d.price * qty) / gameState.leverage;
+  if (requiredCash > gameState.cash) { showToast('資金が不足しています', 'error'); return; }
+
+  gameState.cash -= requiredCash;
+  gameState.positions.push({
+    ticker: s.ticker, name: s.name, type: type,
+    entryPrice: d.price, quantity: qty,
+    leverage: gameState.leverage, margin: requiredCash,
+  });
+
+  addHistory({ action: type, ticker: s.ticker, price: d.price, quantity: qty, leverage: gameState.leverage });
+  showToast(`${s.name} ${qty}株 ${type === 'buy' ? '買い' : '空売り'} 約定`, 'success');
+  needsRender = true;
+}
+
+function closePosition(index) {
+  if (!gameState.running) return;
+  const pos = gameState.positions[index];
+  const d = stockData[pos.ticker];
+  const pnl = pos.type === 'buy'
+    ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
+    : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
+
+  gameState.cash += pos.margin + pnl;
+  gameState.realizedPnl += pnl;
+  gameState.settlementCount++;
+  if (pnl > 0) gameState.winCount++;
+
+  addHistory({ action: 'close', ticker: pos.ticker, price: d.price, quantity: pos.quantity, pnl: pnl });
+  gameState.positions.splice(index, 1);
+  showToast(`${pos.ticker} 決済 ${pnl >= 0 ? '+' : ''}¥${Math.round(pnl).toLocaleString()}`, pnl >= 0 ? 'success' : 'error');
+  needsRender = true;
+}
+
+function addHistory(h) {
+  gameState.history.unshift(h);
+  const container = DOM.history;
+  if (gameState.history.length === 1) container.innerHTML = '';
+
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  const label = h.action === 'buy' ? '買い' : h.action === 'sell' ? '空売り' : '決済';
+  const cls = h.action === 'buy' ? 'buy' : h.action === 'sell' ? 'sell' : (h.pnl >= 0 ? 'buy' : 'sell');
+  let detail = `${h.ticker} ${h.quantity}株 @¥${h.price.toFixed(0)}`;
+  if (h.action === 'close') detail += ` (${h.pnl >= 0 ? '+' : ''}¥${Math.round(h.pnl).toLocaleString()})`;
+  item.innerHTML = `<span class="h-action ${cls}">${label}</span><span>${detail}</span>`;
+  container.prepend(item);
+}
+
+// ==================== トースト ====================
+function showToast(msg, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  DOM.toasts.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ==================== ゲーム制御 ====================
+function startGame() {
+  clearInterval(tickInterval);
+  clearInterval(timerInterval);
+  if (rafId) cancelAnimationFrame(rafId);
+
+  initStocks();
+  gameState.cash = 1000000;
+  gameState.initialCash = 1000000;
+  gameState.realizedPnl = 0;
+  gameState.positions = [];
+  gameState.history = [];
+  gameState.settlementCount = 0;
+  gameState.winCount = 0;
+  gameState.maxProfit = 0;
+  gameState.selectedStock = 0;
+  gameState.running = true;
+
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.remove('show');
+  DOM.history.innerHTML = '<div class="no-positions">まだ取引がありません</div>';
+
+  buildStockList();
+  updateTimer();
+  needsRender = true;
+
+  const config = TIME_CONFIGS[gameState.totalTime] || TIME_CONFIGS[180];
+  tickInterval = setInterval(updatePrices, config.tickMs);
+  timerInterval = setInterval(() => {
+    gameState.timeLeft--;
+    updateTimer();
+    if (gameState.timeLeft <= 0) endGame();
+  }, 1000);
+
+  renderLoop();
+}
+
+function endGame() {
+  gameState.running = false;
+  clearInterval(tickInterval);
+  clearInterval(timerInterval);
+  if (rafId) cancelAnimationFrame(rafId);
+
+  // 全ポジション強制決済
+  while (gameState.positions.length > 0) {
+    const pos = gameState.positions[0];
+    const d = stockData[pos.ticker];
+    const pnl = pos.type === 'buy'
+      ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
+      : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
+    gameState.cash += pos.margin + pnl;
+    gameState.realizedPnl += pnl;
+    gameState.settlementCount++;
+    if (pnl > 0) gameState.winCount++;
+    gameState.positions.shift();
+  }
+
+  const totalPnl = gameState.realizedPnl;
+  const isUp = totalPnl >= 0;
+  const winRate = gameState.settlementCount > 0
+    ? Math.round((gameState.winCount / gameState.settlementCount) * 100) : 0;
+
+  document.getElementById('resultIcon').textContent = isUp ? '🏆' : '📉';
+  document.getElementById('resultTitle').textContent = isUp ? '利益達成！' : 'ゲーム終了';
+
+  const amountEl = document.getElementById('resultAmount');
+  amountEl.textContent = `${isUp ? '+' : ''}¥${Math.round(totalPnl).toLocaleString()}`;
+  amountEl.className = `result-amount ${isUp ? 'positive' : 'negative'}`;
+
+  document.getElementById('rsFinalAsset').textContent = `¥${Math.round(gameState.cash).toLocaleString()}`;
+  document.getElementById('rsTradeCount').textContent = `${gameState.settlementCount}回`;
+  document.getElementById('rsWinRate').textContent = `${winRate}%`;
+  document.getElementById('rsMaxProfit').textContent = `+¥${Math.round(Math.max(0, gameState.maxProfit)).toLocaleString()}`;
+
+  document.getElementById('resultScreen').classList.add('show');
+}
+
+// ==================== イベント ====================
+document.addEventListener('DOMContentLoaded', () => {
+  cacheDom();
+
+  document.getElementById('btnStart').addEventListener('click', startGame);
+  document.getElementById('btnRestart').addEventListener('click', () => {
+    gameState.timeLeft = gameState.totalTime;
+    startGame();
+  });
+
+  document.querySelectorAll('#timeSelect button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#timeSelect button').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      gameState.timeLeft = parseInt(btn.dataset.time);
+      gameState.totalTime = parseInt(btn.dataset.time);
+    });
+  });
+
+  window.addEventListener('resize', () => { lastCanvasW = 0; needsRender = true; });
+
+  initStocks();
+  buildStockList();
+  updateStockListDOM();
+  updateChartHeader();
+  updateOrderInfo();
+  drawChart();
+});
+</script>
+</body>
+</html>
