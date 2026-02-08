@@ -333,7 +333,7 @@ body {
     overflow-y: auto;
     padding-bottom: 20px;
   }
-  .stock-list { max-height: 160px; }
+  .stock-list { max-height: 200px; }
   .chart-canvas-container { min-height: 280px; }
 }
 
@@ -735,12 +735,16 @@ body {
 <script>
 // ==================== 定数 ====================
 const STOCKS = [
-  { ticker: 'TNET', name: 'テックネット', sector: 'IT', basePrice: 8500, volatility: 0.015, trend: 0.0002 },
-  { ticker: 'GFIN', name: 'グローバル金融', sector: '金融', basePrice: 3200, volatility: 0.01, trend: -0.0001 },
-  { ticker: 'MEDI', name: 'メディライフ', sector: '医薬品', basePrice: 5800, volatility: 0.012, trend: 0.00015 },
-  { ticker: 'ENRG', name: 'エナジーパワー', sector: 'エネルギー', basePrice: 2100, volatility: 0.018, trend: 0.0001 },
-  { ticker: 'FOOD', name: 'フードデリ', sector: '食品', basePrice: 4500, volatility: 0.008, trend: 0.00005 },
-  { ticker: 'AUTO', name: 'オートモーティブ', sector: '自動車', basePrice: 6800, volatility: 0.014, trend: -0.00008 },
+  { ticker: 'NXON', name: 'ネクソン・テクノロジーズ', sector: 'IT', basePrice: 12400, volatility: 0.016, trend: 0.0002 },
+  { ticker: 'SMBC', name: '三洋みらい銀行', sector: '金融', basePrice: 3800, volatility: 0.01, trend: -0.0001 },
+  { ticker: 'ASTR', name: 'アストラ製薬', sector: '医薬品', basePrice: 7200, volatility: 0.013, trend: 0.00015 },
+  { ticker: 'VOLT', name: 'ボルトエナジー', sector: 'エネルギー', basePrice: 2600, volatility: 0.018, trend: 0.0001 },
+  { ticker: 'YAMA', name: 'ヤマトフーズ', sector: '食品', basePrice: 4100, volatility: 0.008, trend: 0.00005 },
+  { ticker: 'KAZE', name: '風神モーターズ', sector: '自動車', basePrice: 8900, volatility: 0.014, trend: -0.00008 },
+  { ticker: 'SORA', name: 'ソラコム通信', sector: '通信', basePrice: 5500, volatility: 0.011, trend: 0.00012 },
+  { ticker: 'HOSHI', name: '星野リアルティ', sector: '不動産', basePrice: 3200, volatility: 0.009, trend: 0.00006 },
+  { ticker: 'KUMO', name: 'クモノスAI', sector: 'AI', basePrice: 18500, volatility: 0.02, trend: 0.00025 },
+  { ticker: 'TSUGI', name: 'ツギハギ建設', sector: '建設', basePrice: 1800, volatility: 0.012, trend: -0.00005 },
 ];
 
 const TIME_CONFIGS = {
@@ -1438,12 +1442,6 @@ function updateAssetDisplay() {
   DOM.totalAsset.textContent = `¥${Math.round(totalAsset).toLocaleString()}`;
   DOM.cash.textContent = `¥${Math.round(gameState.cash).toLocaleString()}`;
 
-  // 総資産がマイナスならゲームオーバー
-  if (totalAsset < 0 && gameState.phase === 'running') {
-    endGame('gameover');
-    return;
-  }
-
   const rp = gameState.realizedPnl;
   const isUp = rp >= 0;
   DOM.pnl.textContent = `${isUp ? '+' : ''}¥${Math.round(rp).toLocaleString()}`;
@@ -1541,6 +1539,11 @@ function closePosition(index) {
   rebuildPositionsDOM();
   showToast(`${pos.ticker} 決済 ${pnl >= 0 ? '+' : ''}¥${Math.round(pnl).toLocaleString()}`, pnl >= 0 ? 'success' : 'error');
   needsRender = true;
+
+  // 決済後の総資産がマイナスならゲームオーバー
+  if (gameState.phase === 'running' && gameState.cash < 0) {
+    endGame('gameover');
+  }
 }
 
 function addHistory(h) {
@@ -1697,7 +1700,8 @@ function endGame(reason) {
   const winRate = gameState.settlementCount > 0
     ? Math.round((gameState.winCount / gameState.settlementCount) * 100) : 0;
 
-  const isGameOver = reason === 'gameover';
+  // 決済で呼ばれた場合 or 時間切れ後に全清算して資産マイナスならGAME OVER
+  const isGameOver = reason === 'gameover' || gameState.cash < 0;
   document.getElementById('resultIcon').textContent = isGameOver ? '💀' : (isUp ? '🏆' : '📉');
   document.getElementById('resultTitle').textContent = isGameOver ? 'GAME OVER' : (isUp ? '利益達成！' : 'ゲーム終了');
 
