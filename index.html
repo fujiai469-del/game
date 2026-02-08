@@ -449,6 +449,106 @@ body {
 
   .countdown-text { font-size: 48px; }
 }
+
+/* ========== 成績・ランキング画面 ========== */
+.nav-btns-start { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.btn-nav {
+  padding: 10px 20px; border: 2px solid rgba(255,255,255,0.15); border-radius: 10px;
+  background: transparent; color: #c8cad0; font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+}
+.btn-nav:hover { border-color: #7b8abd; background: rgba(123,138,189,0.1); }
+.overlay-screen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+  display: none; align-items: flex-start; justify-content: center;
+  z-index: 1001; overflow-y: auto; padding: 24px 16px;
+}
+.overlay-screen.show { display: flex; }
+.overlay-inner {
+  width: 100%; max-width: 520px; margin: auto;
+  background: rgba(40,44,60,0.97); border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08); padding: 24px;
+}
+.overlay-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+}
+.overlay-header h2 { font-size: 18px; font-weight: 700; color: #d0d2d8; }
+.btn-overlay-close {
+  width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+  background: transparent; color: #c8cad0; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-overlay-close:hover { background: rgba(255,255,255,0.06); }
+.period-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.period-tab {
+  flex: 1; padding: 8px 6px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+  background: transparent; color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 600;
+  cursor: pointer; text-align: center;
+}
+.period-tab.active { border-color: #7b8abd; background: rgba(123,138,189,0.15); color: #c8cad0; }
+.pnl-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.pnl-card {
+  background: rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; text-align: center;
+}
+.pnl-card .pc-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+.pnl-card .pc-value { font-size: 18px; font-weight: 700; color: #c8cad0; }
+.pnl-card .pc-value.up { color: var(--color-up); }
+.pnl-card .pc-value.down { color: var(--color-down); }
+.pnl-card .pc-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+.ranking-table { width: 100%; }
+.ranking-header {
+  display: grid; grid-template-columns: 40px 1fr 100px 60px;
+  padding: 6px 8px; font-size: 11px; color: rgba(255,255,255,0.4);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.ranking-row {
+  display: grid; grid-template-columns: 40px 1fr 100px 60px;
+  padding: 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  align-items: center;
+}
+.ranking-row.self { background: rgba(123,138,189,0.12); border-radius: 8px; }
+.ranking-row .rank { font-weight: 700; color: rgba(255,255,255,0.6); }
+.ranking-row .rank.top-1 { color: #e8c56a; }
+.ranking-row .rank.top-2 { color: #b0b8c8; }
+.ranking-row .rank.top-3 { color: #c4956a; }
+.ranking-row .r-name { color: #c8cad0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranking-row .r-pnl { font-weight: 700; text-align: right; }
+.ranking-row .r-pnl.up { color: var(--color-up); }
+.ranking-row .r-pnl.down { color: var(--color-down); }
+.ranking-row .r-trades { text-align: right; color: rgba(255,255,255,0.4); font-size: 12px; }
+.ranking-empty { text-align: center; padding: 32px; color: rgba(255,255,255,0.25); font-size: 13px; }
+.status-msg {
+  text-align: center; padding: 10px; border-radius: 8px; font-size: 12px; margin-bottom: 12px;
+}
+.status-msg.warning {
+  background: rgba(232,197,106,0.1); border: 1px solid rgba(232,197,106,0.3); color: #e8c56a;
+}
+.status-msg.error {
+  background: rgba(224,114,114,0.1); border: 1px solid rgba(224,114,114,0.3); color: #e07272;
+}
+.save-status { font-size: 11px; margin-top: 10px; color: rgba(255,255,255,0.4); }
+.save-status.ok { color: #6ec77a; }
+.save-status.fail { color: #e07272; }
+.result-nav { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+.result-nav .btn-nav { padding: 8px 14px; font-size: 12px; }
+.stats-detail-section { margin-bottom: 16px; }
+.stats-detail-section h3 { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+.stats-detail-row {
+  display: flex; justify-content: space-between; padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px;
+}
+.stats-detail-row .sd-label { color: rgba(255,255,255,0.5); }
+.stats-detail-row .sd-value { color: #c8cad0; font-weight: 600; }
+@media (max-width: 640px) {
+  .overlay-inner { padding: 16px; }
+  .overlay-header h2 { font-size: 16px; }
+  .pnl-card .pc-value { font-size: 16px; }
+  .ranking-row { font-size: 12px; padding: 6px; }
+  .ranking-header { font-size: 10px; }
+  .btn-nav { padding: 8px 14px; font-size: 12px; }
+  .nav-btns-start { flex-direction: column; align-items: center; }
+}
 </style>
 </head>
 <body>
@@ -487,6 +587,10 @@ body {
       </button>
     </div>
     <button class="btn-start" id="btnStart">ゲーム開始</button>
+    <div class="nav-btns-start">
+      <button class="btn-nav" id="btnOpenStats">📊 成績</button>
+      <button class="btn-nav" id="btnOpenRanking">🏆 ランキング</button>
+    </div>
   </div>
 </div>
 
@@ -508,6 +612,42 @@ body {
       <div class="result-stat"><div class="rs-label">最大利益</div><div class="rs-value" id="rsMaxProfit">-</div></div>
     </div>
     <button class="btn-restart" id="btnRestart">もう一度プレイ</button>
+    <div class="save-status" id="saveStatus"></div>
+    <div class="result-nav">
+      <button class="btn-nav" id="btnResultStats">📊 成績</button>
+      <button class="btn-nav" id="btnResultRanking">🏆 ランキング</button>
+    </div>
+  </div>
+</div>
+
+<!-- 成績画面 -->
+<div class="overlay-screen" id="statsScreen">
+  <div class="overlay-inner">
+    <div class="overlay-header">
+      <h2>📊 取引成績</h2>
+      <button class="btn-overlay-close" id="btnCloseStats">&times;</button>
+    </div>
+    <div id="statsStorageStatus"></div>
+    <div id="statsContent"></div>
+  </div>
+</div>
+
+<!-- ランキング画面 -->
+<div class="overlay-screen" id="rankingScreen">
+  <div class="overlay-inner">
+    <div class="overlay-header">
+      <h2>🏆 ランキング</h2>
+      <button class="btn-overlay-close" id="btnCloseRanking">&times;</button>
+    </div>
+    <div class="status-msg warning">ローカルランキング（この端末のみ）: オンラインランキング未対応 — サーバ同期不可のためランキング参加はこの端末のデータのみです</div>
+    <div id="rankingStorageStatus"></div>
+    <div class="period-tabs" id="rankingPeriodTabs">
+      <button class="period-tab active" data-period="ALL">全期間</button>
+      <button class="period-tab" data-period="WEEKLY">週次</button>
+      <button class="period-tab" data-period="MONTHLY">月次</button>
+      <button class="period-tab" data-period="DAILY">日次</button>
+    </div>
+    <div id="rankingContent"></div>
   </div>
 </div>
 
@@ -686,6 +826,181 @@ function getTradeColorRGB(side, marketColorMode) {
     return side === 'BUY' ? theme.negativeRGB : theme.positiveRGB;
   }
   return theme.positiveRGB;
+}
+
+// ==================== ストレージ層 ====================
+const STORAGE_KEYS = {
+  TRADES: 'stock_game_trades',
+  USER_ID: 'stock_game_user_id',
+  USER_NAME: 'stock_game_user_name',
+  GAME_RESULTS: 'stock_game_results',
+};
+
+let storageAvailable = false;
+
+function checkStorageAvailability() {
+  try {
+    const test = '__storage_test__';
+    localStorage.setItem(test, test);
+    localStorage.removeItem(test);
+    storageAvailable = true;
+  } catch (e) {
+    storageAvailable = false;
+  }
+  return storageAvailable;
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+}
+
+function getLocalUserId() {
+  if (!storageAvailable) return null;
+  let id = localStorage.getItem(STORAGE_KEYS.USER_ID);
+  if (!id) {
+    id = 'user_' + generateId();
+    localStorage.setItem(STORAGE_KEYS.USER_ID, id);
+  }
+  return id;
+}
+
+function getLocalUserName() {
+  if (!storageAvailable) return '不明';
+  return localStorage.getItem(STORAGE_KEYS.USER_NAME) || ('User#' + (getLocalUserId() || '').slice(-4));
+}
+
+// --- Trade Storage ---
+function saveTrade(trade) {
+  if (!storageAvailable) return false;
+  try {
+    const trades = getAllTrades();
+    trades.push(trade);
+    localStorage.setItem(STORAGE_KEYS.TRADES, JSON.stringify(trades));
+    return true;
+  } catch (e) {
+    console.error('Trade save failed:', e);
+    return false;
+  }
+}
+
+function getAllTrades() {
+  if (!storageAvailable) return [];
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.TRADES) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+// --- Game Result Storage ---
+function saveGameResult(result) {
+  if (!storageAvailable) return false;
+  try {
+    const results = getAllGameResults();
+    results.push(result);
+    localStorage.setItem(STORAGE_KEYS.GAME_RESULTS, JSON.stringify(results));
+    return true;
+  } catch (e) {
+    console.error('Game result save failed:', e);
+    return false;
+  }
+}
+
+function getAllGameResults() {
+  if (!storageAvailable) return [];
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.GAME_RESULTS) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+// --- Period Key Calculation ---
+function getPeriodKey(dateStr, periodType) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  switch (periodType) {
+    case 'DAILY':
+      return `${yyyy}-${mm}-${dd}`;
+    case 'WEEKLY': {
+      const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = tmp.getUTCDay() || 7;
+      tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+      const week = Math.ceil((((tmp - yearStart) / 86400000) + 1) / 7);
+      return `${tmp.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+    }
+    case 'MONTHLY':
+      return `${yyyy}-${mm}`;
+    case 'ALL':
+      return 'ALL';
+    default:
+      return 'ALL';
+  }
+}
+
+// --- PnL Calculation from Trades ---
+function calculatePnlFromTrades(trades) {
+  let realizedPnl = 0, tradeCount = 0, winCount = 0, loseCount = 0;
+  for (const t of trades) {
+    if (t.action === 'CLOSE' && typeof t.pnlDelta === 'number') {
+      realizedPnl += t.pnlDelta;
+      tradeCount++;
+      if (t.pnlDelta > 0) winCount++;
+      else if (t.pnlDelta < 0) loseCount++;
+    }
+  }
+  return { realizedPnl, tradeCount, winCount, loseCount };
+}
+
+// --- Ranking ---
+function getRanking(periodType) {
+  if (!storageAvailable) return { error: '取得不可: ストレージにアクセスできません', data: [] };
+  const results = getAllGameResults();
+  if (results.length === 0) return { error: null, data: [] };
+  const now = new Date();
+  const currentKey = getPeriodKey(now.toISOString(), periodType);
+  const filtered = periodType === 'ALL'
+    ? results
+    : results.filter(r => {
+        const key = getPeriodKey(r.completedAt, periodType);
+        return key !== null && key === currentKey;
+      });
+  // Sort: realizedPnl desc → tradeCount asc → earlier completedAt
+  filtered.sort((a, b) => {
+    if (b.realizedPnl !== a.realizedPnl) return b.realizedPnl - a.realizedPnl;
+    if (a.tradeCount !== b.tradeCount) return a.tradeCount - b.tradeCount;
+    return new Date(a.completedAt) - new Date(b.completedAt);
+  });
+  return { error: null, data: filtered.slice(0, 100) };
+}
+
+// --- Stats Summary ---
+function getStatsSummary() {
+  if (!storageAvailable) return { error: '取得不可: ストレージにアクセスできません', summaries: {} };
+  const trades = getAllTrades();
+  const now = new Date();
+  const periods = ['DAILY', 'WEEKLY', 'MONTHLY', 'ALL'];
+  const summaries = {};
+  for (const p of periods) {
+    const key = getPeriodKey(now.toISOString(), p);
+    const filtered = p === 'ALL'
+      ? trades
+      : trades.filter(t => {
+          const tk = getPeriodKey(t.executedAt, p);
+          return tk !== null && tk === key;
+        });
+    summaries[p] = {
+      ...calculatePnlFromTrades(filtered),
+      periodType: p,
+      periodKey: key,
+    };
+  }
+  const gameResults = getAllGameResults();
+  return { error: null, summaries, totalGames: gameResults.length };
 }
 
 // DOM キャッシュ
@@ -1168,10 +1483,20 @@ function executeOrder(type) {
   if (requiredCash > gameState.cash) { showToast('資金が不足しています', 'error'); return; }
 
   gameState.cash -= requiredCash;
+  const posId = generateId();
   gameState.positions.push({
+    id: posId,
     ticker: s.ticker, name: s.name, type: type,
     entryPrice: d.price, quantity: qty,
     leverage: gameState.leverage, margin: requiredCash,
+  });
+
+  // 取引ログ保存
+  saveTrade({
+    id: generateId(), userId: getLocalUserId(), symbol: s.ticker,
+    side: type === 'buy' ? 'BUY' : 'SELL', qty: qty, price: d.price,
+    leverage: gameState.leverage, executedAt: new Date().toISOString(),
+    positionId: posId, action: 'OPEN', pnlDelta: 0,
   });
 
   addHistory({ action: type, ticker: s.ticker, price: d.price, quantity: qty, leverage: gameState.leverage });
@@ -1195,6 +1520,14 @@ function closePosition(index) {
   gameState.realizedPnl += pnl;
   gameState.settlementCount++;
   if (pnl > 0) gameState.winCount++;
+
+  // 決済の取引ログ保存
+  saveTrade({
+    id: generateId(), userId: getLocalUserId(), symbol: pos.ticker,
+    side: pos.type === 'buy' ? 'BUY' : 'SELL', qty: pos.quantity, price: d.price,
+    leverage: pos.leverage, executedAt: new Date().toISOString(),
+    positionId: pos.id || '', action: 'CLOSE', pnlDelta: pnl,
+  });
 
   addHistory({ action: 'close', ticker: pos.ticker, price: d.price, quantity: pos.quantity, pnl: pnl, originalSide: pos.type });
   gameState.positions.splice(index, 1);
@@ -1333,9 +1666,25 @@ function endGame() {
       gameState.realizedPnl += pnl;
       gameState.settlementCount++;
       if (pnl > 0) gameState.winCount++;
+      // 強制決済の取引ログ保存
+      saveTrade({
+        id: generateId(), userId: getLocalUserId(), symbol: pos.ticker,
+        side: pos.type === 'buy' ? 'BUY' : 'SELL', qty: pos.quantity, price: d.price,
+        leverage: pos.leverage, executedAt: new Date().toISOString(),
+        positionId: pos.id || '', action: 'CLOSE', pnlDelta: pnl,
+      });
     }
     gameState.positions.shift();
   }
+
+  // ゲーム結果を保存
+  const gameResult = {
+    id: generateId(), userId: getLocalUserId(), userName: getLocalUserName(),
+    realizedPnl: gameState.realizedPnl, tradeCount: gameState.settlementCount,
+    winCount: gameState.winCount, loseCount: gameState.settlementCount - gameState.winCount,
+    duration: gameState.totalTime, completedAt: new Date().toISOString(),
+  };
+  const resultSaved = saveGameResult(gameResult);
 
   const totalPnl = gameState.realizedPnl;
   const isUp = totalPnl >= 0;
@@ -1355,11 +1704,134 @@ function endGame() {
   document.getElementById('rsMaxProfit').textContent = `+¥${Math.round(Math.max(0, gameState.maxProfit)).toLocaleString()}`;
 
   document.getElementById('resultScreen').classList.add('show');
+
+  // 保存ステータス表示
+  const saveEl = document.getElementById('saveStatus');
+  if (!storageAvailable) {
+    saveEl.textContent = '保存不可: ストレージにアクセスできません';
+    saveEl.className = 'save-status fail';
+  } else if (resultSaved) {
+    saveEl.textContent = '成績を保存しました';
+    saveEl.className = 'save-status ok';
+  } else {
+    saveEl.textContent = '保存不可: データの書き込みに失敗しました';
+    saveEl.className = 'save-status fail';
+  }
+}
+
+// ==================== 成績画面描画 ====================
+function renderStatsScreen() {
+  const statusEl = document.getElementById('statsStorageStatus');
+  const contentEl = document.getElementById('statsContent');
+
+  if (!storageAvailable) {
+    statusEl.innerHTML = '<div class="status-msg error">取得不可: ストレージにアクセスできません</div>';
+    contentEl.innerHTML = '';
+    return;
+  }
+
+  statusEl.innerHTML = '';
+  const { error, summaries, totalGames } = getStatsSummary();
+  if (error) {
+    statusEl.innerHTML = `<div class="status-msg error">${error}</div>`;
+    contentEl.innerHTML = '';
+    return;
+  }
+
+  const periodLabels = { DAILY: '今日', WEEKLY: '今週', MONTHLY: '今月', ALL: '全期間' };
+  let html = '<div class="pnl-cards">';
+  for (const p of ['DAILY', 'WEEKLY', 'MONTHLY', 'ALL']) {
+    const s = summaries[p];
+    const isUp = s.realizedPnl >= 0;
+    const cls = s.realizedPnl > 0 ? 'up' : s.realizedPnl < 0 ? 'down' : '';
+    html += `<div class="pnl-card">
+      <div class="pc-label">${periodLabels[p]}</div>
+      <div class="pc-value ${cls}">${isUp ? '+' : ''}¥${Math.round(s.realizedPnl).toLocaleString()}</div>
+      <div class="pc-sub">${s.tradeCount}回決済</div>
+    </div>`;
+  }
+  html += '</div>';
+
+  // 詳細統計
+  const all = summaries.ALL;
+  const winRate = all.tradeCount > 0 ? Math.round((all.winCount / all.tradeCount) * 100) : 0;
+  const avgPnl = all.tradeCount > 0 ? Math.round(all.realizedPnl / all.tradeCount) : 0;
+
+  html += '<div class="stats-detail-section"><h3>全期間サマリー</h3>';
+  html += `<div class="stats-detail-row"><span class="sd-label">プレイ回数</span><span class="sd-value">${totalGames}回</span></div>`;
+  html += `<div class="stats-detail-row"><span class="sd-label">総決済回数</span><span class="sd-value">${all.tradeCount}回</span></div>`;
+  html += `<div class="stats-detail-row"><span class="sd-label">勝ち / 負け</span><span class="sd-value">${all.winCount}勝 ${all.loseCount}敗</span></div>`;
+  html += `<div class="stats-detail-row"><span class="sd-label">勝率</span><span class="sd-value">${winRate}%</span></div>`;
+  html += `<div class="stats-detail-row"><span class="sd-label">平均損益（1決済）</span><span class="sd-value">${avgPnl >= 0 ? '+' : ''}¥${avgPnl.toLocaleString()}</span></div>`;
+  html += `<div class="stats-detail-row"><span class="sd-label">累計実現損益</span><span class="sd-value">${all.realizedPnl >= 0 ? '+' : ''}¥${Math.round(all.realizedPnl).toLocaleString()}</span></div>`;
+  html += '</div>';
+
+  contentEl.innerHTML = html;
+}
+
+// ==================== ランキング画面描画 ====================
+let currentRankingPeriod = 'ALL';
+
+function renderRankingScreen(periodType) {
+  currentRankingPeriod = periodType || currentRankingPeriod;
+  const statusEl = document.getElementById('rankingStorageStatus');
+  const contentEl = document.getElementById('rankingContent');
+
+  // タブ状態更新
+  document.querySelectorAll('#rankingPeriodTabs .period-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.period === currentRankingPeriod);
+  });
+
+  if (!storageAvailable) {
+    statusEl.innerHTML = '<div class="status-msg error">取得不可: ストレージにアクセスできません</div>';
+    contentEl.innerHTML = '';
+    return;
+  }
+
+  statusEl.innerHTML = '';
+  const { error, data } = getRanking(currentRankingPeriod);
+  if (error) {
+    statusEl.innerHTML = `<div class="status-msg error">${error}</div>`;
+    contentEl.innerHTML = '';
+    return;
+  }
+
+  if (data.length === 0) {
+    contentEl.innerHTML = '<div class="ranking-empty">まだデータがありません</div>';
+    return;
+  }
+
+  const myId = getLocalUserId();
+  let html = '<div class="ranking-table">';
+  html += '<div class="ranking-header"><span>#</span><span>ユーザー</span><span style="text-align:right">利益額</span><span style="text-align:right">決済数</span></div>';
+
+  for (let i = 0; i < data.length; i++) {
+    const r = data[i];
+    const rank = i + 1;
+    const isSelf = r.userId === myId;
+    const isUp = r.realizedPnl >= 0;
+    const rankCls = rank <= 3 ? ` top-${rank}` : '';
+    html += `<div class="ranking-row${isSelf ? ' self' : ''}">
+      <span class="rank${rankCls}">${rank}</span>
+      <span class="r-name">${escapeHtml(r.userName || 'User#???')}</span>
+      <span class="r-pnl ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}¥${Math.round(r.realizedPnl).toLocaleString()}</span>
+      <span class="r-trades">${r.tradeCount}回</span>
+    </div>`;
+  }
+  html += '</div>';
+  contentEl.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 // ==================== イベント ====================
 document.addEventListener('DOMContentLoaded', () => {
   cacheDom();
+  checkStorageAvailability();
 
   document.getElementById('btnStart').addEventListener('click', () => {
     if (gameState.phase === 'starting') return; // 二重起動防止
@@ -1393,6 +1865,47 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.marketColorMode = 'RISE_GREEN';
       }
     });
+  });
+
+  // 成績画面
+  document.getElementById('btnOpenStats').addEventListener('click', () => {
+    renderStatsScreen();
+    document.getElementById('statsScreen').classList.add('show');
+  });
+  document.getElementById('btnResultStats').addEventListener('click', () => {
+    renderStatsScreen();
+    document.getElementById('statsScreen').classList.add('show');
+  });
+  document.getElementById('btnCloseStats').addEventListener('click', () => {
+    document.getElementById('statsScreen').classList.remove('show');
+  });
+
+  // ランキング画面
+  document.getElementById('btnOpenRanking').addEventListener('click', () => {
+    renderRankingScreen('ALL');
+    document.getElementById('rankingScreen').classList.add('show');
+  });
+  document.getElementById('btnResultRanking').addEventListener('click', () => {
+    renderRankingScreen('ALL');
+    document.getElementById('rankingScreen').classList.add('show');
+  });
+  document.getElementById('btnCloseRanking').addEventListener('click', () => {
+    document.getElementById('rankingScreen').classList.remove('show');
+  });
+
+  // ランキング期間タブ
+  document.querySelectorAll('#rankingPeriodTabs .period-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      renderRankingScreen(tab.dataset.period);
+    });
+  });
+
+  // オーバーレイ背景クリックで閉じる
+  document.getElementById('statsScreen').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
+  });
+  document.getElementById('rankingScreen').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
   });
 
   window.addEventListener('resize', () => { lastCanvasW = 0; needsRender = true; });
