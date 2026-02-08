@@ -2,62 +2,65 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>リアルタイム株式トレードゲーム</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  color: #fff;
+  background: #1a1d2e;
+  color: #e0e0e0;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
+/* ========== ヘッダー ========== */
 .header {
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding: 8px 20px;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 8px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 48px;
 }
-.header-left { display: flex; align-items: center; gap: 10px; }
-.header-left .logo { font-size: 20px; }
-.header-left h1 { font-size: 16px; font-weight: 700; }
-.header-right { display: flex; gap: 12px; align-items: center; }
+.header-left { display: flex; align-items: center; gap: 8px; }
+.header-left .logo { font-size: 18px; }
+.header-left h1 { font-size: 15px; font-weight: 700; color: #c8cad0; }
+.header-right { display: flex; gap: 8px; align-items: center; }
 .stat-box {
   text-align: center;
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
 }
-.stat-box .label { font-size: 10px; color: rgba(255,255,255,0.6); }
-.stat-box .value { font-size: 15px; font-weight: 700; }
-.stat-box .value.positive { color: #00e676; }
-.stat-box .value.negative { color: #ff5252; }
-.timer-box .value { color: #ffd740; }
+.stat-box .label { font-size: 10px; color: rgba(255,255,255,0.45); }
+.stat-box .value { font-size: 14px; font-weight: 700; color: #c8cad0; }
+.stat-box .value.positive { color: #6ec77a; }
+.stat-box .value.negative { color: #e07272; }
+.timer-box .value { color: #e8c56a; }
 
+/* ========== メインレイアウト ========== */
 .main {
   display: grid;
-  grid-template-columns: 240px 1fr 300px;
-  gap: 12px;
-  padding: 12px;
+  grid-template-columns: 220px 1fr 280px;
+  gap: 10px;
+  padding: 10px;
   height: calc(100vh - 48px);
+  height: calc(100dvh - 48px);
   overflow: hidden;
 }
 
-/* 銘柄リスト */
+/* ========== 銘柄リスト ========== */
 .stock-list {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
   border-radius: 12px;
   padding: 10px;
   overflow-y: auto;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
 }
-.stock-list h2 { font-size: 13px; margin-bottom: 8px; color: rgba(255,255,255,0.7); }
+.stock-list h2 { font-size: 12px; margin-bottom: 8px; color: rgba(255,255,255,0.5); }
 .stock-item {
   padding: 8px 10px;
   border-radius: 8px;
@@ -65,49 +68,49 @@ body {
   transition: background 0.15s;
   margin-bottom: 4px;
   border: 2px solid transparent;
-  background: rgba(255,255,255,0.03);
+  background: rgba(255,255,255,0.02);
 }
-.stock-item:hover { background: rgba(255,255,255,0.08); }
-.stock-item.selected { border-color: #7c4dff; background: rgba(124,77,255,0.15); }
-.stock-item .stock-name { font-weight: 700; font-size: 13px; }
-.stock-item .stock-ticker { font-size: 11px; color: rgba(255,255,255,0.5); }
-.stock-item .stock-price { font-size: 15px; font-weight: 700; }
+.stock-item:hover { background: rgba(255,255,255,0.06); }
+.stock-item.selected { border-color: #7b8abd; background: rgba(123,138,189,0.12); }
+.stock-item .stock-name { font-weight: 700; font-size: 13px; color: #d0d2d8; }
+.stock-item .stock-ticker { font-size: 11px; color: rgba(255,255,255,0.4); }
+.stock-item .stock-price { font-size: 14px; font-weight: 700; color: #c8cad0; }
 .stock-item .stock-change { font-size: 11px; margin-top: 1px; }
-.stock-item .stock-change.up { color: #00e676; }
-.stock-item .stock-change.down { color: #ff5252; }
+.stock-item .stock-change.up { color: #6ec77a; }
+.stock-item .stock-change.down { color: #e07272; }
 .si-row { display: flex; justify-content: space-between; align-items: center; }
 
-/* チャートエリア */
+/* ========== チャートエリア ========== */
 .chart-area {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
   border-radius: 12px;
   padding: 12px;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
   overflow: hidden;
+  min-height: 0;
 }
-.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.chart-header .stock-info h2 { font-size: 16px; font-weight: 700; }
-.chart-header .stock-info .current-price { font-size: 24px; font-weight: 800; margin-top: 2px; }
+.chart-header { margin-bottom: 8px; }
+.chart-header .stock-info h2 { font-size: 15px; font-weight: 700; color: #c8cad0; }
+.chart-header .stock-info .current-price { font-size: 22px; font-weight: 800; color: #e0e0e0; }
 .chart-header .stock-info .price-change { font-size: 13px; margin-top: 1px; }
-.chart-header .stock-info .price-change.up { color: #00e676; }
-.chart-header .stock-info .price-change.down { color: #ff5252; }
+.chart-header .stock-info .price-change.up { color: #6ec77a; }
+.chart-header .stock-info .price-change.down { color: #e07272; }
 .chart-canvas-container { flex: 1; position: relative; min-height: 0; }
 .chart-canvas-container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-/* 取引パネル */
+/* ========== 取引パネル ========== */
 .trade-panel { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 .panel-card {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
   border-radius: 12px;
   padding: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
 }
-.panel-card h3 { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
+.panel-card h3 { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
 
-/* 売買ボタン（メイン） */
-.trade-buttons { display: flex; gap: 6px; margin-bottom: 10px; }
+.trade-buttons { display: flex; gap: 6px; margin-bottom: 8px; }
 .btn-trade {
   flex: 1;
   padding: 12px 8px;
@@ -120,46 +123,45 @@ body {
 }
 .btn-trade:hover { transform: translateY(-1px); opacity: 0.9; }
 .btn-trade:active { transform: translateY(0); }
-.btn-trade.buy-btn { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
-.btn-trade.sell-btn { background: linear-gradient(135deg, #ff5252, #d50000); color: #fff; }
-.btn-trade.settle-btn { background: linear-gradient(135deg, #ffd740, #ffc400); color: #000; }
+.btn-trade.buy-btn { background: linear-gradient(135deg, #5bab68, #4a9a58); color: #fff; }
+.btn-trade.sell-btn { background: linear-gradient(135deg, #c76b6b, #b55a5a); color: #fff; }
+.btn-trade.settle-btn { background: linear-gradient(135deg, #d4b55a, #c4a54a); color: #1a1d2e; }
 
-/* 設定エリア */
 .trade-settings { display: flex; gap: 8px; margin-bottom: 8px; }
 .setting-group { flex: 1; }
-.setting-group label { display: block; font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+.setting-group label { display: block; font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
 .setting-group input {
   width: 100%;
   padding: 6px 8px;
   border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.05);
-  color: #fff;
+  color: #e0e0e0;
   font-size: 14px;
   outline: none;
 }
-.setting-group input:focus { border-color: #7c4dff; }
+.setting-group input:focus { border-color: #7b8abd; }
 .quick-btns { display: flex; gap: 4px; margin-top: 4px; }
 .quick-btns button {
   flex: 1;
   padding: 4px;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 6px;
   background: transparent;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.5);
   font-size: 11px;
   cursor: pointer;
 }
-.quick-btns button:hover { background: rgba(255,255,255,0.08); }
-.quick-btns button.selected { border-color: #7c4dff; background: rgba(124,77,255,0.2); color: #fff; }
+.quick-btns button:hover { background: rgba(255,255,255,0.06); }
+.quick-btns button.selected { border-color: #7b8abd; background: rgba(123,138,189,0.15); color: #c8cad0; }
 
 .order-info {
   font-size: 12px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.4);
   text-align: center;
   padding: 4px 0;
 }
-.order-info span { color: #fff; font-weight: 600; }
+.order-info span { color: #c8cad0; font-weight: 600; }
 
 /* ポジション */
 .positions-list { max-height: 180px; overflow-y: auto; }
@@ -171,114 +173,213 @@ body {
   font-size: 12px;
 }
 .pos-header { display: flex; justify-content: space-between; align-items: center; }
-.pos-ticker { font-weight: 700; font-size: 13px; }
+.pos-ticker { font-weight: 700; font-size: 13px; color: #c8cad0; }
 .pos-pnl { font-weight: 600; }
-.pos-pnl.up { color: #00e676; }
-.pos-pnl.down { color: #ff5252; }
-.pos-details { display: flex; justify-content: space-between; margin-top: 3px; color: rgba(255,255,255,0.5); font-size: 11px; }
+.pos-pnl.up { color: #6ec77a; }
+.pos-pnl.down { color: #e07272; }
+.pos-details { display: flex; justify-content: space-between; margin-top: 3px; color: rgba(255,255,255,0.4); font-size: 11px; }
 .btn-close-pos {
   padding: 3px 8px;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.15);
   border-radius: 5px;
   background: transparent;
-  color: #fff;
+  color: #c8cad0;
   font-size: 11px;
   cursor: pointer;
   margin-left: 6px;
 }
-.btn-close-pos:hover { background: rgba(255,255,255,0.1); }
+.btn-close-pos:hover { background: rgba(255,255,255,0.08); }
 
 /* 取引履歴 */
 .history-list { max-height: 120px; overflow-y: auto; }
 .history-item {
   font-size: 11px;
   padding: 4px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
   display: flex;
   justify-content: space-between;
+  color: rgba(255,255,255,0.6);
 }
 .h-action { font-weight: 600; }
-.h-action.buy { color: #00e676; }
-.h-action.sell { color: #ff5252; }
+.h-action.buy { color: #6ec77a; }
+.h-action.sell { color: #e07272; }
 
-.no-positions { text-align: center; padding: 16px; color: rgba(255,255,255,0.3); font-size: 12px; }
+.no-positions { text-align: center; padding: 16px; color: rgba(255,255,255,0.25); font-size: 12px; }
 
-/* 開始画面 */
+/* ========== 開始画面 ========== */
 .start-screen {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  background: #1a1d2e;
   display: flex; align-items: center; justify-content: center;
   z-index: 1000; transition: opacity 0.5s;
+  overflow-y: auto;
 }
 .start-screen.hidden { opacity: 0; pointer-events: none; }
-.start-content { text-align: center; max-width: 480px; padding: 32px; }
-.start-content .logo-big { font-size: 56px; margin-bottom: 12px; }
-.start-content h1 { font-size: 32px; font-weight: 800; margin-bottom: 6px; }
-.start-content p { color: rgba(255,255,255,0.6); margin-bottom: 24px; font-size: 15px; }
+.start-content { text-align: center; max-width: 440px; padding: 32px 20px; }
+.start-content .logo-big { font-size: 48px; margin-bottom: 12px; }
+.start-content h1 { font-size: 26px; font-weight: 800; color: #d0d2d8; }
+.start-content p { color: rgba(255,255,255,0.5); margin-bottom: 20px; font-size: 14px; }
 .start-content .rules {
-  text-align: left; background: rgba(255,255,255,0.05);
-  border-radius: 14px; padding: 16px; margin-bottom: 24px;
+  text-align: left; background: rgba(255,255,255,0.04);
+  border-radius: 12px; padding: 14px; margin-bottom: 20px;
 }
-.start-content .rules h3 { margin-bottom: 10px; font-size: 15px; }
-.start-content .rules li { margin-bottom: 6px; padding-left: 6px; font-size: 13px; color: rgba(255,255,255,0.8); list-style: none; }
-.start-content .rules li::before { content: '• '; color: #7c4dff; }
+.start-content .rules h3 { margin-bottom: 8px; font-size: 14px; color: #c8cad0; }
+.start-content .rules li { margin-bottom: 5px; padding-left: 6px; font-size: 13px; color: rgba(255,255,255,0.6); list-style: none; }
+.start-content .rules li::before { content: '• '; color: #7b8abd; }
 .time-select { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
 .time-select button {
-  padding: 8px 20px; border: 2px solid rgba(255,255,255,0.2); border-radius: 10px;
-  background: transparent; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+  padding: 8px 18px; border: 2px solid rgba(255,255,255,0.15); border-radius: 10px;
+  background: transparent; color: #c8cad0; font-size: 14px; font-weight: 600; cursor: pointer;
 }
-.time-select button.selected { border-color: #7c4dff; background: rgba(124,77,255,0.2); }
-.time-select button:hover { border-color: #7c4dff; }
+.time-select button.selected { border-color: #7b8abd; background: rgba(123,138,189,0.15); }
+.time-select button:hover { border-color: #7b8abd; }
 .btn-start {
-  padding: 14px 56px; border: none; border-radius: 12px;
-  background: linear-gradient(135deg, #7c4dff, #651fff);
-  color: #fff; font-size: 18px; font-weight: 700; cursor: pointer;
+  padding: 14px 48px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, #6a7bbd, #5568a8);
+  color: #fff; font-size: 17px; font-weight: 700; cursor: pointer;
 }
-.btn-start:hover { transform: scale(1.05); box-shadow: 0 8px 32px rgba(124,77,255,0.4); }
+.btn-start:hover { transform: scale(1.03); box-shadow: 0 6px 24px rgba(106,123,189,0.3); }
 
-/* 結果画面 */
+/* ========== 結果画面 ========== */
 .result-screen {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
   display: none; align-items: center; justify-content: center; z-index: 1000;
 }
 .result-screen.show { display: flex; }
 .result-content {
-  text-align: center; max-width: 420px; padding: 40px;
-  background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+  text-align: center; max-width: 400px; padding: 36px 24px;
+  background: rgba(40,44,60,0.95); border-radius: 18px; border: 1px solid rgba(255,255,255,0.08);
 }
-.result-content .result-icon { font-size: 56px; margin-bottom: 12px; }
-.result-content h2 { font-size: 24px; margin-bottom: 6px; }
-.result-amount { font-size: 36px; font-weight: 800; margin: 12px 0; }
-.result-amount.positive { color: #00e676; }
-.result-amount.negative { color: #ff5252; }
-.result-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
-.result-stat { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; }
-.result-stat .rs-label { font-size: 11px; color: rgba(255,255,255,0.5); }
-.result-stat .rs-value { font-size: 16px; font-weight: 700; margin-top: 3px; }
+.result-content .result-icon { font-size: 48px; margin-bottom: 10px; }
+.result-content h2 { font-size: 22px; margin-bottom: 6px; color: #d0d2d8; }
+.result-amount { font-size: 32px; font-weight: 800; margin: 10px 0; }
+.result-amount.positive { color: #6ec77a; }
+.result-amount.negative { color: #e07272; }
+.result-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; }
+.result-stat { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px; }
+.result-stat .rs-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+.result-stat .rs-value { font-size: 15px; font-weight: 700; margin-top: 3px; color: #c8cad0; }
 .btn-restart {
-  padding: 12px 40px; border: none; border-radius: 10px;
-  background: linear-gradient(135deg, #7c4dff, #651fff);
+  padding: 12px 36px; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, #6a7bbd, #5568a8);
   color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
 }
-.btn-restart:hover { transform: scale(1.05); }
+.btn-restart:hover { transform: scale(1.03); }
 
-/* トースト */
-.toast-container { position: fixed; top: 56px; right: 16px; z-index: 500; display: flex; flex-direction: column; gap: 6px; }
+/* ========== トースト ========== */
+.toast-container { position: fixed; top: 56px; right: 12px; z-index: 500; display: flex; flex-direction: column; gap: 6px; }
 .toast {
   padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
   animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+  color: #e0e0e0;
 }
-.toast.success { background: rgba(0,230,118,0.2); border: 1px solid #00e676; }
-.toast.error { background: rgba(255,82,82,0.2); border: 1px solid #ff5252; }
-.toast.info { background: rgba(124,77,255,0.2); border: 1px solid #7c4dff; }
+.toast.success { background: rgba(110,199,122,0.15); border: 1px solid rgba(110,199,122,0.4); }
+.toast.error { background: rgba(224,114,114,0.15); border: 1px solid rgba(224,114,114,0.4); }
+.toast.info { background: rgba(123,138,189,0.15); border: 1px solid rgba(123,138,189,0.4); }
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeOut { to { opacity: 0; } }
 
+/* ========== タブレット ========== */
 @media (max-width: 1100px) {
-  .main { grid-template-columns: 1fr; height: auto; overflow-y: auto; }
-  .stock-list { max-height: 180px; }
-  .chart-canvas-container { min-height: 250px; }
+  .main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    height: auto;
+    overflow-y: auto;
+    padding-bottom: 20px;
+  }
+  .stock-list { max-height: 160px; }
+  .chart-canvas-container { min-height: 280px; }
+}
+
+/* ========== スマホ ========== */
+@media (max-width: 640px) {
+  body { overflow: auto; }
+
+  .header {
+    flex-direction: column;
+    height: auto;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .header-left h1 { font-size: 14px; }
+  .header-right {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 4px;
+  }
+  .stat-box { padding: 3px 4px; }
+  .stat-box .label { font-size: 9px; }
+  .stat-box .value { font-size: 12px; }
+
+  .main {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow-y: auto;
+    gap: 8px;
+    padding: 8px;
+    padding-bottom: 24px;
+  }
+
+  /* 銘柄リスト横スクロール */
+  .stock-list {
+    padding: 8px;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stock-list h2 { font-size: 11px; margin-bottom: 6px; }
+  #stockListContainer {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stock-item {
+    min-width: 140px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+    padding: 6px 8px;
+  }
+  .stock-item .stock-name { font-size: 12px; }
+  .stock-item .stock-ticker { font-size: 10px; }
+  .stock-item .stock-price { font-size: 13px; }
+  .stock-item .stock-change { font-size: 10px; }
+  .si-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+
+  .chart-area { padding: 10px 8px; }
+  .chart-header .stock-info h2 { font-size: 14px; }
+  .chart-header .stock-info .current-price { font-size: 20px; }
+  .chart-header .stock-info .price-change { font-size: 12px; }
+  .chart-canvas-container { min-height: 220px; }
+
+  .trade-panel { gap: 6px; }
+  .panel-card { padding: 10px; }
+  .panel-card h3 { font-size: 11px; }
+
+  .trade-settings { flex-direction: column; gap: 6px; }
+  .btn-trade { padding: 14px 8px; font-size: 16px; }
+
+  .toast-container { right: 8px; left: 8px; }
+  .toast { font-size: 12px; padding: 8px 12px; }
+
+  .start-content { padding: 24px 16px; }
+  .start-content .logo-big { font-size: 40px; }
+  .start-content h1 { font-size: 22px; }
+  .start-content p { font-size: 13px; }
+  .start-content .rules { padding: 12px; }
+  .start-content .rules li { font-size: 12px; }
+  .time-select button { padding: 6px 14px; font-size: 13px; }
+  .btn-start { padding: 12px 40px; font-size: 16px; }
+
+  .result-content { padding: 28px 16px; margin: 16px; }
+  .result-content .result-icon { font-size: 40px; }
+  .result-content h2 { font-size: 20px; }
+  .result-amount { font-size: 28px; }
 }
 </style>
 </head>
@@ -291,7 +392,7 @@ body {
     <h1>株トレードシミュレーター</h1>
     <p>リアルタイムに変動する株価で売買して利益を目指そう！</p>
     <div class="rules">
-      <h3>⚡ ゲームルール</h3>
+      <h3>ゲームルール</h3>
       <ul>
         <li>初期資金 ¥1,000,000 でスタート</li>
         <li>6つの銘柄からリアルタイムで売買</li>
@@ -339,7 +440,7 @@ body {
 
 <div class="main">
   <div class="stock-list">
-    <h2>📋 銘柄一覧</h2>
+    <h2>銘柄一覧</h2>
     <div id="stockListContainer"></div>
   </div>
 
@@ -357,9 +458,8 @@ body {
   </div>
 
   <div class="trade-panel">
-    <!-- 注文パネル -->
     <div class="panel-card">
-      <h3>📝 注文</h3>
+      <h3>注文</h3>
       <div class="trade-settings">
         <div class="setting-group">
           <label>数量</label>
@@ -390,17 +490,15 @@ body {
       </div>
     </div>
 
-    <!-- ポジション -->
     <div class="panel-card">
-      <h3>📊 保有ポジション</h3>
+      <h3>保有ポジション</h3>
       <div class="positions-list" id="positionsList">
         <div class="no-positions">ポジションなし</div>
       </div>
     </div>
 
-    <!-- 取引履歴 -->
     <div class="panel-card">
-      <h3>📜 取引履歴</h3>
+      <h3>取引履歴</h3>
       <div class="history-list" id="historyList">
         <div class="no-positions">まだ取引がありません</div>
       </div>
@@ -421,11 +519,10 @@ const STOCKS = [
   { ticker: 'AUTO', name: 'オートモーティブ', sector: '自動車', basePrice: 6800, volatility: 0.014, trend: -0.00008 },
 ];
 
-// 時間モードごとのボラティリティ倍率と更新間隔
 const TIME_CONFIGS = {
-  180:  { volScale: 1.0,  tickMs: 300 },   // 3分: 速い
-  300:  { volScale: 0.6,  tickMs: 400 },   // 5分: 普通
-  600:  { volScale: 0.35, tickMs: 500 },   // 10分: ゆっくり
+  180:  { volScale: 1.0,  tickMs: 300 },
+  300:  { volScale: 0.6,  tickMs: 400 },
+  600:  { volScale: 0.35, tickMs: 500 },
 };
 
 // ==================== ゲーム状態 ====================
@@ -433,7 +530,7 @@ const gameState = {
   running: false,
   cash: 1000000,
   initialCash: 1000000,
-  realizedPnl: 0, // 確定損益のみ
+  realizedPnl: 0,
   positions: [],
   history: [],
   timeLeft: 180,
@@ -452,7 +549,6 @@ let timerInterval = null;
 let rafId = null;
 let needsRender = true;
 
-// DOM キャッシュ
 const DOM = {};
 function cacheDom() {
   DOM.timer = document.getElementById('timerDisplay');
@@ -489,6 +585,7 @@ function initStocks() {
 
 // ==================== 価格更新 ====================
 function updatePrices() {
+  if (!gameState.running) return;
   const config = TIME_CONFIGS[gameState.totalTime] || TIME_CONFIGS[180];
   const volScale = config.volScale;
 
@@ -518,7 +615,7 @@ function updatePrices() {
   needsRender = true;
 }
 
-// ==================== 描画（requestAnimationFrame） ====================
+// ==================== 描画 ====================
 function renderLoop() {
   if (!gameState.running) return;
   if (needsRender) {
@@ -533,7 +630,7 @@ function renderLoop() {
   rafId = requestAnimationFrame(renderLoop);
 }
 
-// ==================== 銘柄リスト（差分更新） ====================
+// ==================== 銘柄リスト ====================
 let stockItemEls = [];
 function buildStockList() {
   DOM.stockList.innerHTML = '';
@@ -551,11 +648,13 @@ function buildStockList() {
     });
   });
 }
+
 function updateStockListDOM() {
   for (let i = 0; i < STOCKS.length; i++) {
     const s = STOCKS[i];
     const d = stockData[s.ticker];
     const se = stockItemEls[i];
+    if (!se) continue;
     const isUp = d.price >= d.openPrice;
     const changePct = ((d.price - d.openPrice) / d.openPrice * 100).toFixed(2);
     const changeAmt = (d.price - d.openPrice).toFixed(1);
@@ -573,6 +672,7 @@ function updateStockListDOM() {
 function updateChartHeader() {
   const s = STOCKS[gameState.selectedStock];
   const d = stockData[s.ticker];
+  if (!d) return;
   const isUp = d.price >= d.openPrice;
   const changePct = ((d.price - d.openPrice) / d.openPrice * 100).toFixed(2);
   const changeAmt = (d.price - d.openPrice).toFixed(1);
@@ -592,7 +692,6 @@ function drawChart() {
   const h = container.clientHeight;
   if (w === 0 || h === 0) return;
 
-  // キャンバスリサイズ（必要時のみ）
   const dpr = window.devicePixelRatio || 1;
   if (lastCanvasW !== w || lastCanvasH !== h) {
     DOM.canvas.width = w * dpr;
@@ -605,6 +704,7 @@ function drawChart() {
 
   const s = STOCKS[gameState.selectedStock];
   const prices = priceHistories[s.ticker];
+  if (!prices) return;
   const len = prices.length;
   if (len < 2) return;
 
@@ -622,10 +722,10 @@ function drawChart() {
   const ch = h - pad.top - pad.bottom;
 
   // グリッド
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   ctx.lineWidth = 1;
   ctx.font = '10px -apple-system,sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.textAlign = 'right';
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + (ch / 4) * i;
@@ -637,9 +737,10 @@ function drawChart() {
   }
 
   const isUp = prices[len - 1] >= prices[0];
-  const gc = isUp ? [0, 230, 118] : [255, 82, 82];
+  const lineColor = isUp ? '#6ec77a' : '#e07272';
+  const gc = isUp ? [110, 199, 122] : [224, 114, 114];
 
-  // パス計算
+  // エリア塗り
   const xStep = cw / (len - 1);
   ctx.beginPath();
   for (let i = 0; i < len; i++) {
@@ -648,16 +749,13 @@ function drawChart() {
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
-
-  // エリア塗り
   const lastX = pad.left + (len - 1) * xStep;
-  const gradPath = ctx.currentTransform; // save path
   ctx.lineTo(lastX, pad.top + ch);
   ctx.lineTo(pad.left, pad.top + ch);
   ctx.closePath();
   const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
-  grad.addColorStop(0, `rgba(${gc.join(',')},0.25)`);
-  grad.addColorStop(1, `rgba(${gc.join(',')},0.02)`);
+  grad.addColorStop(0, `rgba(${gc.join(',')},0.18)`);
+  grad.addColorStop(1, `rgba(${gc.join(',')},0.01)`);
   ctx.fillStyle = grad;
   ctx.fill();
 
@@ -669,7 +767,7 @@ function drawChart() {
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
-  ctx.strokeStyle = isUp ? '#00e676' : '#ff5252';
+  ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -677,7 +775,7 @@ function drawChart() {
   const lastY = pad.top + (1 - (prices[len - 1] - minP) / range) * ch;
   ctx.beginPath();
   ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
-  ctx.fillStyle = isUp ? '#00e676' : '#ff5252';
+  ctx.fillStyle = lineColor;
   ctx.fill();
 
   // ポジションライン
@@ -687,14 +785,14 @@ function drawChart() {
     const posY = pad.top + (1 - (pos.entryPrice - minP) / range) * ch;
     if (posY < pad.top || posY > pad.top + ch) continue;
     ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = pos.type === 'buy' ? 'rgba(0,230,118,0.5)' : 'rgba(255,82,82,0.5)';
+    ctx.strokeStyle = pos.type === 'buy' ? 'rgba(110,199,122,0.5)' : 'rgba(224,114,114,0.5)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(pad.left, posY);
     ctx.lineTo(w - pad.right, posY);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = pos.type === 'buy' ? '#00e676' : '#ff5252';
+    ctx.fillStyle = pos.type === 'buy' ? '#6ec77a' : '#e07272';
     ctx.font = '9px -apple-system,sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`${pos.type === 'buy' ? '買' : '売'} ¥${pos.entryPrice.toFixed(0)}`, pad.left + 3, posY - 3);
@@ -705,42 +803,66 @@ function drawChart() {
 function updateOrderInfo() {
   const s = STOCKS[gameState.selectedStock];
   const d = stockData[s.ticker];
+  if (!d) return;
   const qty = parseInt(document.getElementById('orderQuantity').value) || 0;
   const required = (d.price * qty) / gameState.leverage;
   DOM.osTotal.textContent = `¥${Math.round(required).toLocaleString()}`;
 }
 
-// ==================== ポジション（差分更新） ====================
+// ==================== ポジション表示 ====================
+function rebuildPositionsDOM() {
+  const container = DOM.positions;
+  container.innerHTML = '';
+  if (gameState.positions.length === 0) {
+    container.innerHTML = '<div class="no-positions">ポジションなし</div>';
+    return;
+  }
+  gameState.positions.forEach((pos, i) => {
+    const item = document.createElement('div');
+    item.className = 'position-item';
+    item.innerHTML = `<div class="pos-header"><span class="pos-ticker"></span><div><span class="pos-pnl"></span><button class="btn-close-pos" data-idx="${i}">決済</button></div></div><div class="pos-details"><span class="pos-info"></span><span class="pos-prices"></span></div>`;
+    container.appendChild(item);
+  });
+  // イベントデリゲーション
+  container.querySelectorAll('.btn-close-pos').forEach(btn => {
+    btn.addEventListener('click', function() {
+      closePosition(parseInt(this.getAttribute('data-idx')));
+    });
+  });
+}
+
 function updatePositionsDOM() {
   const container = DOM.positions;
-  if (gameState.positions.length === 0) {
-    if (container.childElementCount !== 1 || !container.querySelector('.no-positions')) {
+  const posCount = gameState.positions.length;
+
+  if (posCount === 0) {
+    if (!container.querySelector('.no-positions')) {
       container.innerHTML = '<div class="no-positions">ポジションなし</div>';
     }
     return;
   }
-  // 簡易差分: 子要素数が合わなければ再構築
-  if (container.childElementCount !== gameState.positions.length) {
-    container.innerHTML = '';
-    gameState.positions.forEach((pos, i) => {
-      const item = document.createElement('div');
-      item.className = 'position-item';
-      item.setAttribute('data-idx', i);
-      item.innerHTML = `<div class="pos-header"><span class="pos-ticker"></span><div><span class="pos-pnl"></span><button class="btn-close-pos" onclick="closePosition(${i})">決済</button></div></div><div class="pos-details"><span class="pos-info"></span><span class="pos-prices"></span></div>`;
-      container.appendChild(item);
-    });
+
+  // ポジション数が変わったら再構築
+  const items = container.querySelectorAll('.position-item');
+  if (items.length !== posCount) {
+    rebuildPositionsDOM();
+    return updatePositionsValues();
   }
-  // 値更新
-  const items = container.children;
+  updatePositionsValues();
+}
+
+function updatePositionsValues() {
+  const items = DOM.positions.querySelectorAll('.position-item');
   for (let i = 0; i < gameState.positions.length; i++) {
     const pos = gameState.positions[i];
     const d = stockData[pos.ticker];
+    if (!d || !items[i]) continue;
     const pnl = pos.type === 'buy'
       ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
       : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
     const isUp = pnl >= 0;
     const item = items[i];
-    item.querySelector('.pos-ticker').textContent = `${pos.type === 'buy' ? '🟢' : '🔴'} ${pos.ticker}`;
+    item.querySelector('.pos-ticker').textContent = `${pos.type === 'buy' ? '買' : '売'} ${pos.ticker}`;
     const pnlEl = item.querySelector('.pos-pnl');
     pnlEl.textContent = `${isUp ? '+' : ''}¥${Math.round(pnl).toLocaleString()}`;
     pnlEl.className = `pos-pnl ${isUp ? 'up' : 'down'}`;
@@ -755,6 +877,7 @@ function updateAssetDisplay() {
   for (let i = 0; i < gameState.positions.length; i++) {
     const pos = gameState.positions[i];
     const d = stockData[pos.ticker];
+    if (!d) continue;
     unrealized += pos.type === 'buy'
       ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
       : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
@@ -764,7 +887,6 @@ function updateAssetDisplay() {
   DOM.totalAsset.textContent = `¥${Math.round(totalAsset).toLocaleString()}`;
   DOM.cash.textContent = `¥${Math.round(gameState.cash).toLocaleString()}`;
 
-  // 確定損益のみ表示
   const rp = gameState.realizedPnl;
   const isUp = rp >= 0;
   DOM.pnl.textContent = `${isUp ? '+' : ''}¥${Math.round(rp).toLocaleString()}`;
@@ -802,6 +924,7 @@ function executeOrder(type) {
   if (!gameState.running) return;
   const s = STOCKS[gameState.selectedStock];
   const d = stockData[s.ticker];
+  if (!d) return;
   const qty = parseInt(document.getElementById('orderQuantity').value) || 0;
   if (qty <= 0) { showToast('数量を入力してください', 'error'); return; }
 
@@ -817,13 +940,18 @@ function executeOrder(type) {
 
   addHistory({ action: type, ticker: s.ticker, price: d.price, quantity: qty, leverage: gameState.leverage });
   showToast(`${s.name} ${qty}株 ${type === 'buy' ? '買い' : '空売り'} 約定`, 'success');
+
+  // ポジションDOM即時再構築
+  rebuildPositionsDOM();
   needsRender = true;
 }
 
 function closePosition(index) {
   if (!gameState.running) return;
+  if (index < 0 || index >= gameState.positions.length) return;
   const pos = gameState.positions[index];
   const d = stockData[pos.ticker];
+  if (!d) return;
   const pnl = pos.type === 'buy'
     ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
     : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
@@ -835,6 +963,9 @@ function closePosition(index) {
 
   addHistory({ action: 'close', ticker: pos.ticker, price: d.price, quantity: pos.quantity, pnl: pnl });
   gameState.positions.splice(index, 1);
+
+  // ポジションDOM即時再構築
+  rebuildPositionsDOM();
   showToast(`${pos.ticker} 決済 ${pnl >= 0 ? '+' : ''}¥${Math.round(pnl).toLocaleString()}`, pnl >= 0 ? 'success' : 'error');
   needsRender = true;
 }
@@ -892,6 +1023,7 @@ function startGame() {
   const config = TIME_CONFIGS[gameState.totalTime] || TIME_CONFIGS[180];
   tickInterval = setInterval(updatePrices, config.tickMs);
   timerInterval = setInterval(() => {
+    if (!gameState.running) return;
     gameState.timeLeft--;
     updateTimer();
     if (gameState.timeLeft <= 0) endGame();
@@ -910,13 +1042,15 @@ function endGame() {
   while (gameState.positions.length > 0) {
     const pos = gameState.positions[0];
     const d = stockData[pos.ticker];
-    const pnl = pos.type === 'buy'
-      ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
-      : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
-    gameState.cash += pos.margin + pnl;
-    gameState.realizedPnl += pnl;
-    gameState.settlementCount++;
-    if (pnl > 0) gameState.winCount++;
+    if (d) {
+      const pnl = pos.type === 'buy'
+        ? (d.price - pos.entryPrice) * pos.quantity * pos.leverage
+        : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
+      gameState.cash += pos.margin + pnl;
+      gameState.realizedPnl += pnl;
+      gameState.settlementCount++;
+      if (pnl > 0) gameState.winCount++;
+    }
     gameState.positions.shift();
   }
 
