@@ -1438,6 +1438,12 @@ function updateAssetDisplay() {
   DOM.totalAsset.textContent = `¥${Math.round(totalAsset).toLocaleString()}`;
   DOM.cash.textContent = `¥${Math.round(gameState.cash).toLocaleString()}`;
 
+  // 総資産がマイナスならゲームオーバー
+  if (totalAsset < 0 && gameState.phase === 'running') {
+    endGame('gameover');
+    return;
+  }
+
   const rp = gameState.realizedPnl;
   const isUp = rp >= 0;
   DOM.pnl.textContent = `${isUp ? '+' : ''}¥${Math.round(rp).toLocaleString()}`;
@@ -1648,7 +1654,7 @@ function startGame() {
   }, 1000);
 }
 
-function endGame() {
+function endGame(reason) {
   // ── phase → ended ──
   gameState.phase = 'ended';
   gameState.running = false;
@@ -1691,8 +1697,9 @@ function endGame() {
   const winRate = gameState.settlementCount > 0
     ? Math.round((gameState.winCount / gameState.settlementCount) * 100) : 0;
 
-  document.getElementById('resultIcon').textContent = isUp ? '🏆' : '📉';
-  document.getElementById('resultTitle').textContent = isUp ? '利益達成！' : 'ゲーム終了';
+  const isGameOver = reason === 'gameover';
+  document.getElementById('resultIcon').textContent = isGameOver ? '💀' : (isUp ? '🏆' : '📉');
+  document.getElementById('resultTitle').textContent = isGameOver ? 'GAME OVER' : (isUp ? '利益達成！' : 'ゲーム終了');
 
   const amountEl = document.getElementById('resultAmount');
   amountEl.textContent = `${isUp ? '+' : ''}¥${Math.round(totalPnl).toLocaleString()}`;
