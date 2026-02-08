@@ -182,12 +182,11 @@ body {
   padding: 8px 10px;
   margin-bottom: 4px;
   font-size: 12px;
+  border-left: 3px solid transparent;
 }
 .pos-header { display: flex; justify-content: space-between; align-items: center; }
 .pos-ticker { font-weight: 700; font-size: 13px; color: #c8cad0; }
 .pos-pnl { font-weight: 600; }
-.pos-pnl.up { color: var(--color-up); }
-.pos-pnl.down { color: var(--color-down); }
 .pos-details { display: flex; justify-content: space-between; margin-top: 3px; color: rgba(255,255,255,0.4); font-size: 11px; }
 .btn-close-pos {
   padding: 5px 12px;
@@ -212,8 +211,6 @@ body {
   color: rgba(255,255,255,0.6);
 }
 .h-action { font-weight: 600; }
-.h-action.buy { color: var(--color-up); }
-.h-action.sell { color: var(--color-down); }
 
 .no-positions { text-align: center; padding: 16px; color: rgba(255,255,255,0.25); font-size: 12px; }
 
@@ -428,11 +425,7 @@ body {
     font-weight: 600;
     border-radius: 8px;
     min-height: 36px;
-    background: rgba(var(--color-down-rgb),0.12);
-    border-color: rgba(var(--color-down-rgb),0.3);
-    color: var(--color-down);
   }
-  .btn-close-pos:active { background: rgba(var(--color-down-rgb),0.25); }
   .pos-details { font-size: 12px; margin-top: 6px; }
 
   .toast-container { right: 8px; left: 8px; }
@@ -637,6 +630,7 @@ const gameState = {
   settlementCount: 0,
   winCount: 0,
   maxProfit: 0,
+  marketColorMode: 'RISE_GREEN',
 };
 
 let stockData = {};
@@ -656,6 +650,43 @@ function getUpColor() { return getComputedStyle(document.documentElement).getPro
 function getDownColor() { return getComputedStyle(document.documentElement).getPropertyValue('--color-down').trim(); }
 function getUpRGB() { return getComputedStyle(document.documentElement).getPropertyValue('--color-up-rgb').trim(); }
 function getDownRGB() { return getComputedStyle(document.documentElement).getPropertyValue('--color-down-rgb').trim(); }
+
+// テーマ変数（固定色）
+const theme = {
+  positive: '#6ec77a',
+  negative: '#e07272',
+  positiveRGB: '110,199,122',
+  negativeRGB: '224,114,114',
+};
+
+// 売買方向に基づく色を返す
+// side: "BUY" | "SELL" のみ許可
+// marketColorMode: "RISE_GREEN" | "RISE_RED"
+function getTradeColor(side, marketColorMode) {
+  if (side !== 'BUY' && side !== 'SELL') {
+    throw new Error('side must be "BUY" or "SELL"');
+  }
+  if (marketColorMode === 'RISE_GREEN') {
+    return side === 'BUY' ? theme.positive : theme.negative;
+  }
+  if (marketColorMode === 'RISE_RED') {
+    return side === 'BUY' ? theme.negative : theme.positive;
+  }
+  return theme.positive;
+}
+
+function getTradeColorRGB(side, marketColorMode) {
+  if (side !== 'BUY' && side !== 'SELL') {
+    throw new Error('side must be "BUY" or "SELL"');
+  }
+  if (marketColorMode === 'RISE_GREEN') {
+    return side === 'BUY' ? theme.positiveRGB : theme.negativeRGB;
+  }
+  if (marketColorMode === 'RISE_RED') {
+    return side === 'BUY' ? theme.negativeRGB : theme.positiveRGB;
+  }
+  return theme.positiveRGB;
+}
 
 // DOM キャッシュ
 const DOM = {};
@@ -968,17 +999,18 @@ function drawCandlestickChart() {
     if (pos.ticker !== ticker) continue;
     const posY = yOf(pos.entryPrice);
     if (posY < pad.top - 10 || posY > pad.top + ch + 10) continue;
+    const posSide = pos.type === 'buy' ? 'BUY' : 'SELL';
+    const posColor = getTradeColor(posSide, gameState.marketColorMode);
+    const posColorRGB = getTradeColorRGB(posSide, gameState.marketColorMode);
     ctx.setLineDash([5, 3]);
-    const posUpRGB = getUpRGB();
-    const posDnRGB = getDownRGB();
-    ctx.strokeStyle = pos.type === 'buy' ? `rgba(${posUpRGB},0.6)` : `rgba(${posDnRGB},0.6)`;
+    ctx.strokeStyle = `rgba(${posColorRGB},0.6)`;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(pad.left, posY);
     ctx.lineTo(w - pad.right, posY);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = pos.type === 'buy' ? getUpColor() : getDownColor();
+    ctx.fillStyle = posColor;
     ctx.font = '10px -apple-system,sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`${pos.type === 'buy' ? '買' : '売'} ¥${pos.entryPrice.toFixed(0)}`, pad.left + 4, posY - 4);
@@ -1046,10 +1078,30 @@ function updatePositionsValues() {
       : (pos.entryPrice - d.price) * pos.quantity * pos.leverage;
     const isUp = pnl >= 0;
     const item = items[i];
-    item.querySelector('.pos-ticker').textContent = `${pos.type === 'buy' ? '買' : '売'} ${pos.ticker}`;
+
+    const side = pos.type === 'buy' ? 'BUY' : 'SELL';
+    const tradeColor = getTradeColor(side, gameState.marketColorMode);
+    const tradeColorRGB = getTradeColorRGB(side, gameState.marketColorMode);
+
+    // 左ボーダー: 売買方向の色
+    item.style.borderLeftColor = tradeColor;
+
+    // ラベル: 売買方向の色
+    const tickerEl = item.querySelector('.pos-ticker');
+    tickerEl.innerHTML = `<span style="color:${tradeColor}">${pos.type === 'buy' ? '買' : '売'}</span> ${pos.ticker}`;
+
+    // 損益: 利益=上昇色、損失=下落色
     const pnlEl = item.querySelector('.pos-pnl');
     pnlEl.textContent = `${isUp ? '+' : ''}¥${Math.round(pnl).toLocaleString()}`;
-    pnlEl.className = `pos-pnl ${isUp ? 'up' : 'down'}`;
+    pnlEl.className = 'pos-pnl';
+    pnlEl.style.color = isUp ? getUpColor() : getDownColor();
+
+    // 決済ボタン: 売買方向の色
+    const closeBtn = item.querySelector('.btn-close-pos');
+    closeBtn.style.borderColor = `rgba(${tradeColorRGB},0.3)`;
+    closeBtn.style.color = tradeColor;
+    closeBtn.style.background = `rgba(${tradeColorRGB},0.08)`;
+
     item.querySelector('.pos-info').textContent = `${pos.quantity}株 × ${pos.leverage}x`;
     item.querySelector('.pos-prices').textContent = `取得: ¥${pos.entryPrice.toFixed(0)} → 現在: ¥${d.price.toFixed(0)}`;
   }
@@ -1144,7 +1196,7 @@ function closePosition(index) {
   gameState.settlementCount++;
   if (pnl > 0) gameState.winCount++;
 
-  addHistory({ action: 'close', ticker: pos.ticker, price: d.price, quantity: pos.quantity, pnl: pnl });
+  addHistory({ action: 'close', ticker: pos.ticker, price: d.price, quantity: pos.quantity, pnl: pnl, originalSide: pos.type });
   gameState.positions.splice(index, 1);
 
   rebuildPositionsDOM();
@@ -1160,10 +1212,16 @@ function addHistory(h) {
   const item = document.createElement('div');
   item.className = 'history-item';
   const label = h.action === 'buy' ? '買い' : h.action === 'sell' ? '空売り' : '決済';
-  const cls = h.action === 'buy' ? 'buy' : h.action === 'sell' ? 'sell' : (h.pnl >= 0 ? 'buy' : 'sell');
+
+  // 売買方向に基づく色を適用（決済の場合は元ポジションの方向を使用）
+  const side = h.action === 'close'
+    ? (h.originalSide === 'sell' ? 'SELL' : 'BUY')
+    : (h.action === 'buy' ? 'BUY' : 'SELL');
+  const tradeColor = getTradeColor(side, gameState.marketColorMode);
+
   let detail = `${h.ticker} ${h.quantity}株 @¥${h.price.toFixed(0)}`;
   if (h.action === 'close') detail += ` (${h.pnl >= 0 ? '+' : ''}¥${Math.round(h.pnl).toLocaleString()})`;
-  item.innerHTML = `<span class="h-action ${cls}">${label}</span><span>${detail}</span>`;
+  item.innerHTML = `<span class="h-action" style="color:${tradeColor}">${label}</span><span>${detail}</span>`;
   container.prepend(item);
 }
 
@@ -1329,8 +1387,10 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('selected');
       if (btn.dataset.mode === 'reverse') {
         document.documentElement.classList.add('color-reverse');
+        gameState.marketColorMode = 'RISE_RED';
       } else {
         document.documentElement.classList.remove('color-reverse');
+        gameState.marketColorMode = 'RISE_GREEN';
       }
     });
   });
