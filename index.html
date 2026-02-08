@@ -125,7 +125,6 @@ body {
 .btn-trade:active { transform: translateY(0); }
 .btn-trade.buy-btn { background: linear-gradient(135deg, #5bab68, #4a9a58); color: #fff; }
 .btn-trade.sell-btn { background: linear-gradient(135deg, #c76b6b, #b55a5a); color: #fff; }
-.btn-trade.settle-btn { background: linear-gradient(135deg, #d4b55a, #c4a54a); color: #1a1d2e; }
 
 .trade-settings { display: flex; gap: 8px; margin-bottom: 8px; }
 .setting-group { flex: 1; }
@@ -237,8 +236,29 @@ body {
   padding: 14px 48px; border: none; border-radius: 12px;
   background: linear-gradient(135deg, #6a7bbd, #5568a8);
   color: #fff; font-size: 17px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s;
 }
 .btn-start:hover { transform: scale(1.03); box-shadow: 0 6px 24px rgba(106,123,189,0.3); }
+.btn-start:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+
+/* ========== カウントダウンオーバーレイ ========== */
+.countdown-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.countdown-overlay.show { opacity: 1; pointer-events: auto; }
+.countdown-text {
+  font-size: 64px; font-weight: 800; color: #e8c56a;
+  animation: countPulse 0.6s ease-out;
+}
+@keyframes countPulse {
+  0% { transform: scale(1.5); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
 
 /* ========== 結果画面 ========== */
 .result-screen {
@@ -323,7 +343,6 @@ body {
     padding-bottom: 24px;
   }
 
-  /* 銘柄リスト横スクロール */
   .stock-list {
     padding: 8px;
     max-height: none;
@@ -405,6 +424,8 @@ body {
   .result-content .result-icon { font-size: 40px; }
   .result-content h2 { font-size: 20px; }
   .result-amount { font-size: 28px; }
+
+  .countdown-text { font-size: 48px; }
 }
 </style>
 </head>
@@ -434,6 +455,11 @@ body {
     </div>
     <button class="btn-start" id="btnStart">ゲーム開始</button>
   </div>
+</div>
+
+<!-- カウントダウンオーバーレイ -->
+<div class="countdown-overlay" id="countdownOverlay">
+  <div class="countdown-text" id="countdownText">Ready</div>
 </div>
 
 <!-- 結果画面 -->
@@ -534,7 +560,7 @@ body {
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ==================== 銘柄データ ====================
+// ==================== 定数 ====================
 const STOCKS = [
   { ticker: 'TNET', name: 'テックネット', sector: 'IT', basePrice: 8500, volatility: 0.015, trend: 0.0002 },
   { ticker: 'GFIN', name: 'グローバル金融', sector: '金融', basePrice: 3200, volatility: 0.01, trend: -0.0001 },
@@ -550,9 +576,15 @@ const TIME_CONFIGS = {
   600:  { volScale: 0.35, tickMs: 500 },
 };
 
-// ==================== ゲーム状態 ====================
+// ローソク足設定
+const CANDLE_INTERVAL_MS = 1000; // 1秒足
+const MAX_CANDLES = 80;          // 最大表示本数
+
+// ==================== ゲーム状態 (state machine) ====================
+// states: 'idle' | 'starting' | 'running' | 'ended'
 const gameState = {
-  running: false,
+  phase: 'idle',
+  running: false,       // running の互換（phase==='running' と同期）
   cash: 1000000,
   initialCash: 1000000,
   realizedPnl: 0,
@@ -568,12 +600,18 @@ const gameState = {
 };
 
 let stockData = {};
-let priceHistories = {};
+let priceHistories = {};  // tick単位（内部用）
+let candleData = {};      // 銘柄ごとのローソク足配列
+let currentCandle = {};   // 銘柄ごとの形成中ローソク足
+let candleStartTime = 0;  // 現在の足の開始時刻
+
 let tickInterval = null;
 let timerInterval = null;
 let rafId = null;
+let startDelayTimer = null;
 let needsRender = true;
 
+// DOM キャッシュ
 const DOM = {};
 function cacheDom() {
   DOM.timer = document.getElementById('timerDisplay');
@@ -591,12 +629,16 @@ function cacheDom() {
   DOM.ctx = DOM.canvas.getContext('2d');
   DOM.canvasContainer = DOM.canvas.parentElement;
   DOM.toasts = document.getElementById('toastContainer');
+  DOM.countdown = document.getElementById('countdownOverlay');
+  DOM.countdownText = document.getElementById('countdownText');
 }
 
 // ==================== 初期化 ====================
 function initStocks() {
   stockData = {};
   priceHistories = {};
+  candleData = {};
+  currentCandle = {};
   STOCKS.forEach(s => {
     const startPrice = s.basePrice * (0.9 + Math.random() * 0.2);
     stockData[s.ticker] = {
@@ -605,14 +647,25 @@ function initStocks() {
       microTrend: (Math.random() - 0.5) * 0.001,
     };
     priceHistories[s.ticker] = [startPrice];
+    // 初期ローソク足: 開始価格のみの1本
+    candleData[s.ticker] = [];
+    currentCandle[s.ticker] = {
+      open: startPrice, high: startPrice, low: startPrice, close: startPrice,
+    };
   });
+  candleStartTime = Date.now();
 }
 
-// ==================== 価格更新 ====================
+// ==================== 価格更新 + ローソク足生成 ====================
 function updatePrices() {
-  if (!gameState.running) return;
+  if (gameState.phase !== 'running') return;
   const config = TIME_CONFIGS[gameState.totalTime] || TIME_CONFIGS[180];
   const volScale = config.volScale;
+  const now = Date.now();
+
+  // 足確定チェック
+  const candleElapsed = now - candleStartTime;
+  const shouldFinalize = candleElapsed >= CANDLE_INTERVAL_MS;
 
   for (let i = 0; i < STOCKS.length; i++) {
     const s = STOCKS[i];
@@ -633,16 +686,40 @@ function updatePrices() {
     if (d.price > d.high) d.high = d.price;
     if (d.price < d.low) d.low = d.price;
 
+    // tick履歴（内部用）
     const hist = priceHistories[s.ticker];
     hist.push(d.price);
     if (hist.length > 200) hist.shift();
+
+    // 形成中ローソク足を更新
+    const cc = currentCandle[s.ticker];
+    cc.close = d.price;
+    if (d.price > cc.high) cc.high = d.price;
+    if (d.price < cc.low) cc.low = d.price;
+
+    // 足確定
+    if (shouldFinalize) {
+      candleData[s.ticker].push({ ...cc });
+      if (candleData[s.ticker].length > MAX_CANDLES) {
+        candleData[s.ticker].shift();
+      }
+      // 新しい足を開始
+      currentCandle[s.ticker] = {
+        open: d.price, high: d.price, low: d.price, close: d.price,
+      };
+    }
   }
+
+  if (shouldFinalize) {
+    candleStartTime = now;
+  }
+
   needsRender = true;
 }
 
-// ==================== 描画 ====================
+// ==================== 描画ループ ====================
 function renderLoop() {
-  if (!gameState.running) return;
+  if (gameState.phase !== 'running') return;
   if (needsRender) {
     needsRender = false;
     updateStockListDOM();
@@ -650,7 +727,7 @@ function renderLoop() {
     updateOrderInfo();
     updatePositionsDOM();
     updateAssetDisplay();
-    drawChart();
+    drawCandlestickChart();
   }
   rafId = requestAnimationFrame(renderLoop);
 }
@@ -708,9 +785,10 @@ function updateChartHeader() {
   DOM.chartChange.className = `price-change ${isUp ? 'up' : 'down'}`;
 }
 
-// ==================== チャート描画 ====================
+// ==================== ローソク足チャート描画 ====================
 let lastCanvasW = 0, lastCanvasH = 0;
-function drawChart() {
+
+function drawCandlestickChart() {
   const ctx = DOM.ctx;
   const container = DOM.canvasContainer;
   const w = container.clientWidth;
@@ -728,23 +806,33 @@ function drawChart() {
   ctx.clearRect(0, 0, w, h);
 
   const s = STOCKS[gameState.selectedStock];
-  const prices = priceHistories[s.ticker];
-  if (!prices) return;
-  const len = prices.length;
-  if (len < 2) return;
+  const ticker = s.ticker;
+  const finalized = candleData[ticker] || [];
+  const forming = currentCandle[ticker];
+  if (!forming) return;
 
+  // 確定足 + 形成中の足を結合
+  const allCandles = [...finalized, forming];
+  const len = allCandles.length;
+  if (len === 0) return;
+
+  // Y軸レンジ算出
   let minP = Infinity, maxP = -Infinity;
   for (let i = 0; i < len; i++) {
-    if (prices[i] < minP) minP = prices[i];
-    if (prices[i] > maxP) maxP = prices[i];
+    if (allCandles[i].low < minP) minP = allCandles[i].low;
+    if (allCandles[i].high > maxP) maxP = allCandles[i].high;
   }
-  minP *= 0.999;
-  maxP *= 1.001;
+  const rangePad = (maxP - minP) * 0.08 || maxP * 0.01;
+  minP -= rangePad;
+  maxP += rangePad;
   const range = maxP - minP || 1;
 
-  const pad = { top: 16, bottom: 20, left: 50, right: 16 };
+  const pad = { top: 16, bottom: 20, left: 55, right: 16 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
+
+  // Y座標ヘルパー
+  const yOf = (price) => pad.top + (1 - (price - minP) / range) * ch;
 
   // グリッド
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -758,59 +846,84 @@ function drawChart() {
     ctx.moveTo(pad.left, y);
     ctx.lineTo(w - pad.right, y);
     ctx.stroke();
-    ctx.fillText(`¥${(maxP - (range / 4) * i).toFixed(0)}`, pad.left - 6, y + 3);
+    const priceLabel = maxP - (range / 4) * i;
+    ctx.fillText(`¥${priceLabel.toFixed(0)}`, pad.left - 6, y + 3);
   }
 
-  const isUp = prices[len - 1] >= prices[0];
-  const lineColor = isUp ? '#6ec77a' : '#e07272';
-  const gc = isUp ? [110, 199, 122] : [224, 114, 114];
+  // ローソク足描画
+  const totalSlots = Math.max(len, 20); // 最低20スロット確保
+  const slotWidth = cw / totalSlots;
+  const bodyWidth = Math.max(2, Math.min(slotWidth * 0.7, 14));
+  const wickWidth = Math.max(1, bodyWidth * 0.15);
 
-  // エリア塗り
-  const xStep = cw / (len - 1);
-  ctx.beginPath();
   for (let i = 0; i < len; i++) {
-    const x = pad.left + i * xStep;
-    const y = pad.top + (1 - (prices[i] - minP) / range) * ch;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  const lastX = pad.left + (len - 1) * xStep;
-  ctx.lineTo(lastX, pad.top + ch);
-  ctx.lineTo(pad.left, pad.top + ch);
-  ctx.closePath();
-  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
-  grad.addColorStop(0, `rgba(${gc.join(',')},0.18)`);
-  grad.addColorStop(1, `rgba(${gc.join(',')},0.01)`);
-  ctx.fillStyle = grad;
-  ctx.fill();
+    const c = allCandles[i];
+    const x = pad.left + (i + 0.5) * slotWidth;
+    const isUp = c.close >= c.open;
+    const isForming = (i === len - 1);
 
-  // ライン
-  ctx.beginPath();
-  for (let i = 0; i < len; i++) {
-    const x = pad.left + i * xStep;
-    const y = pad.top + (1 - (prices[i] - minP) / range) * ch;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    const bullColor = '#6ec77a';
+    const bearColor = '#e07272';
+    const color = isUp ? bullColor : bearColor;
+    const alpha = isForming ? 0.7 : 1.0;
+
+    ctx.globalAlpha = alpha;
+
+    // ヒゲ（上下の線）
+    const highY = yOf(c.high);
+    const lowY = yOf(c.low);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = wickWidth;
+    ctx.beginPath();
+    ctx.moveTo(x, highY);
+    ctx.lineTo(x, lowY);
+    ctx.stroke();
+
+    // 実体
+    const openY = yOf(c.open);
+    const closeY = yOf(c.close);
+    const bodyTop = Math.min(openY, closeY);
+    const bodyH = Math.max(Math.abs(closeY - openY), 1);
+
+    if (isUp) {
+      // 陽線: 塗りつぶし
+      ctx.fillStyle = color;
+      ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyH);
+    } else {
+      // 陰線: 塗りつぶし
+      ctx.fillStyle = color;
+      ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyH);
+    }
+
+    ctx.globalAlpha = 1.0;
   }
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 2;
+
+  // 現在価格ライン（点線）
+  const currentPrice = stockData[ticker].price;
+  const currentY = yOf(currentPrice);
+  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, currentY);
+  ctx.lineTo(w - pad.right, currentY);
   ctx.stroke();
+  ctx.setLineDash([]);
 
-  // 現在値ドット
-  const lastY = pad.top + (1 - (prices[len - 1] - minP) / range) * ch;
-  ctx.beginPath();
-  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
-  ctx.fillStyle = lineColor;
-  ctx.fill();
+  // 現在価格ラベル（右端）
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '10px -apple-system,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`¥${currentPrice.toFixed(0)}`, w - pad.right + 2, currentY + 3);
 
   // ポジションライン
   for (let pi = 0; pi < gameState.positions.length; pi++) {
     const pos = gameState.positions[pi];
-    if (pos.ticker !== s.ticker) continue;
-    const posY = pad.top + (1 - (pos.entryPrice - minP) / range) * ch;
-    if (posY < pad.top || posY > pad.top + ch) continue;
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = pos.type === 'buy' ? 'rgba(110,199,122,0.5)' : 'rgba(224,114,114,0.5)';
+    if (pos.ticker !== ticker) continue;
+    const posY = yOf(pos.entryPrice);
+    if (posY < pad.top - 10 || posY > pad.top + ch + 10) continue;
+    ctx.setLineDash([5, 3]);
+    ctx.strokeStyle = pos.type === 'buy' ? 'rgba(110,199,122,0.6)' : 'rgba(224,114,114,0.6)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(pad.left, posY);
@@ -818,9 +931,9 @@ function drawChart() {
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = pos.type === 'buy' ? '#6ec77a' : '#e07272';
-    ctx.font = '9px -apple-system,sans-serif';
+    ctx.font = '10px -apple-system,sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`${pos.type === 'buy' ? '買' : '売'} ¥${pos.entryPrice.toFixed(0)}`, pad.left + 3, posY - 3);
+    ctx.fillText(`${pos.type === 'buy' ? '買' : '売'} ¥${pos.entryPrice.toFixed(0)}`, pad.left + 4, posY - 4);
   }
 }
 
@@ -848,7 +961,6 @@ function rebuildPositionsDOM() {
     item.innerHTML = `<div class="pos-header"><span class="pos-ticker"></span><div><span class="pos-pnl"></span><button class="btn-close-pos" data-idx="${i}">決済</button></div></div><div class="pos-details"><span class="pos-info"></span><span class="pos-prices"></span></div>`;
     container.appendChild(item);
   });
-  // イベントデリゲーション
   container.querySelectorAll('.btn-close-pos').forEach(btn => {
     btn.addEventListener('click', function() {
       closePosition(parseInt(this.getAttribute('data-idx')));
@@ -867,7 +979,6 @@ function updatePositionsDOM() {
     return;
   }
 
-  // ポジション数が変わったら再構築
   const items = container.querySelectorAll('.position-item');
   if (items.length !== posCount) {
     rebuildPositionsDOM();
@@ -946,7 +1057,7 @@ function setLeverage(lev) {
 }
 
 function executeOrder(type) {
-  if (!gameState.running) return;
+  if (gameState.phase !== 'running') return;
   const s = STOCKS[gameState.selectedStock];
   const d = stockData[s.ticker];
   if (!d) return;
@@ -966,13 +1077,12 @@ function executeOrder(type) {
   addHistory({ action: type, ticker: s.ticker, price: d.price, quantity: qty, leverage: gameState.leverage });
   showToast(`${s.name} ${qty}株 ${type === 'buy' ? '買い' : '空売り'} 約定`, 'success');
 
-  // ポジションDOM即時再構築
   rebuildPositionsDOM();
   needsRender = true;
 }
 
 function closePosition(index) {
-  if (!gameState.running) return;
+  if (gameState.phase !== 'running') return;
   if (index < 0 || index >= gameState.positions.length) return;
   const pos = gameState.positions[index];
   const d = stockData[pos.ticker];
@@ -989,7 +1099,6 @@ function closePosition(index) {
   addHistory({ action: 'close', ticker: pos.ticker, price: d.price, quantity: pos.quantity, pnl: pnl });
   gameState.positions.splice(index, 1);
 
-  // ポジションDOM即時再構築
   rebuildPositionsDOM();
   showToast(`${pos.ticker} 決済 ${pnl >= 0 ? '+' : ''}¥${Math.round(pnl).toLocaleString()}`, pnl >= 0 ? 'success' : 'error');
   needsRender = true;
@@ -1019,12 +1128,25 @@ function showToast(msg, type = 'info') {
   setTimeout(() => toast.remove(), 3000);
 }
 
-// ==================== ゲーム制御 ====================
-function startGame() {
+// ==================== ゲーム制御 (state machine) ====================
+function cleanupIntervals() {
   clearInterval(tickInterval);
   clearInterval(timerInterval);
+  clearTimeout(startDelayTimer);
   if (rafId) cancelAnimationFrame(rafId);
+  tickInterval = null;
+  timerInterval = null;
+  startDelayTimer = null;
+  rafId = null;
+}
 
+function startGame() {
+  // ── phase → starting ──
+  cleanupIntervals();
+  gameState.phase = 'starting';
+  gameState.running = false;
+
+  // リセット
   initStocks();
   gameState.cash = 1000000;
   gameState.initialCash = 1000000;
@@ -1035,33 +1157,63 @@ function startGame() {
   gameState.winCount = 0;
   gameState.maxProfit = 0;
   gameState.selectedStock = 0;
-  gameState.running = true;
 
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('resultScreen').classList.remove('show');
+  document.getElementById('btnStart').disabled = true;
   DOM.history.innerHTML = '<div class="no-positions">まだ取引がありません</div>';
 
   buildStockList();
   updateTimer();
-  needsRender = true;
 
-  const config = TIME_CONFIGS[gameState.totalTime] || TIME_CONFIGS[180];
-  tickInterval = setInterval(updatePrices, config.tickMs);
-  timerInterval = setInterval(() => {
-    if (!gameState.running) return;
-    gameState.timeLeft--;
-    updateTimer();
-    if (gameState.timeLeft <= 0) endGame();
+  // 初期のチャートを描画（静止状態）
+  updateStockListDOM();
+  updateChartHeader();
+  updateOrderInfo();
+  drawCandlestickChart();
+
+  // カウントダウン演出
+  DOM.countdown.classList.add('show');
+  DOM.countdownText.textContent = 'Ready...';
+  DOM.countdownText.style.animation = 'none';
+  void DOM.countdownText.offsetWidth;
+  DOM.countdownText.style.animation = '';
+
+  startDelayTimer = setTimeout(() => {
+    // ── phase → running ──
+    DOM.countdownText.textContent = 'GO!';
+    DOM.countdownText.style.animation = 'none';
+    void DOM.countdownText.offsetWidth;
+    DOM.countdownText.style.animation = '';
+
+    setTimeout(() => {
+      DOM.countdown.classList.remove('show');
+    }, 400);
+
+    gameState.phase = 'running';
+    gameState.running = true;
+    document.getElementById('btnStart').disabled = false;
+    needsRender = true;
+
+    const config = TIME_CONFIGS[gameState.totalTime] || TIME_CONFIGS[180];
+    tickInterval = setInterval(updatePrices, config.tickMs);
+    timerInterval = setInterval(() => {
+      if (gameState.phase !== 'running') return;
+      gameState.timeLeft--;
+      updateTimer();
+      if (gameState.timeLeft <= 0) endGame();
+    }, 1000);
+
+    candleStartTime = Date.now();
+    renderLoop();
   }, 1000);
-
-  renderLoop();
 }
 
 function endGame() {
+  // ── phase → ended ──
+  gameState.phase = 'ended';
   gameState.running = false;
-  clearInterval(tickInterval);
-  clearInterval(timerInterval);
-  if (rafId) cancelAnimationFrame(rafId);
+  cleanupIntervals();
 
   // 全ポジション強制決済
   while (gameState.positions.length > 0) {
@@ -1103,8 +1255,12 @@ function endGame() {
 document.addEventListener('DOMContentLoaded', () => {
   cacheDom();
 
-  document.getElementById('btnStart').addEventListener('click', startGame);
+  document.getElementById('btnStart').addEventListener('click', () => {
+    if (gameState.phase === 'starting') return; // 二重起動防止
+    startGame();
+  });
   document.getElementById('btnRestart').addEventListener('click', () => {
+    if (gameState.phase === 'starting') return;
     gameState.timeLeft = gameState.totalTime;
     startGame();
   });
@@ -1125,7 +1281,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStockListDOM();
   updateChartHeader();
   updateOrderInfo();
-  drawChart();
+  drawCandlestickChart();
 });
 </script>
 </body>
