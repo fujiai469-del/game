@@ -1294,6 +1294,44 @@ function drawCandlestickChart() {
     ctx.globalAlpha = 1.0;
   }
 
+  // 移動平均線（SMA）
+  const MA_CONFIGS = [
+    { period: 5,  color: '#e8c56a', label: 'MA5' },   // 金色（短期）
+    { period: 20, color: '#b07be8', label: 'MA20' },   // 紫（中期）
+  ];
+  for (const ma of MA_CONFIGS) {
+    if (len < ma.period) continue;
+    ctx.strokeStyle = ma.color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    let started = false;
+    for (let i = ma.period - 1; i < len; i++) {
+      let sum = 0;
+      for (let j = i - ma.period + 1; j <= i; j++) {
+        sum += allCandles[j].close;
+      }
+      const avg = sum / ma.period;
+      const x = pad.left + (i + 0.5) * slotWidth;
+      const y = yOf(avg);
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else { ctx.lineTo(x, y); }
+    }
+    ctx.stroke();
+    // ラベル（線の末尾に表示）
+    if (started) {
+      let sum = 0;
+      for (let j = len - ma.period; j < len; j++) sum += allCandles[j].close;
+      const lastAvg = sum / ma.period;
+      const lastX = pad.left + (len - 0.5) * slotWidth;
+      ctx.fillStyle = ma.color;
+      ctx.font = '9px -apple-system,sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(ma.label, lastX + 4, yOf(lastAvg) + 3);
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
   // 現在価格ライン（点線）
   const currentPrice = stockData[ticker].price;
   const currentY = yOf(currentPrice);
