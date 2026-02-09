@@ -92,6 +92,16 @@ body {
 .stock-item .stock-change.down { color: var(--color-down); }
 .si-row { display: flex; justify-content: space-between; align-items: center; }
 
+/* ========== 中央カラム ========== */
+.center-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+.positions-card { flex-shrink: 0; }
+
 /* ========== チャートエリア ========== */
 .chart-area {
   background: rgba(255,255,255,0.04);
@@ -102,6 +112,7 @@ body {
   border: 1px solid rgba(255,255,255,0.06);
   overflow: hidden;
   min-height: 0;
+  flex: 1;
 }
 .chart-header { margin-bottom: 8px; }
 .chart-header .stock-info h2 { font-size: 15px; font-weight: 700; color: #c8cad0; }
@@ -327,6 +338,26 @@ body {
 }
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeOut { to { opacity: 0; } }
+
+/* ========== イベントフラッシュ ========== */
+.event-flash {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 900; pointer-events: none;
+  opacity: 0; transition: opacity 0.15s;
+}
+.event-flash.show { opacity: 1; }
+.event-flash-text {
+  font-size: 28px; font-weight: 800; color: #e8c56a;
+  text-shadow: 0 0 20px rgba(232,197,106,0.6), 0 0 40px rgba(232,197,106,0.3);
+  text-align: center; padding: 0 20px;
+  animation: eventPulse 0.6s ease-in-out 3;
+}
+@keyframes eventPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
 
 /* ========== タブレット ========== */
 @media (max-width: 1100px) {
@@ -672,16 +703,24 @@ body {
     <div id="stockListContainer"></div>
   </div>
 
-  <div class="chart-area">
-    <div class="chart-header">
-      <div class="stock-info">
-        <h2 id="chartStockName">-</h2>
-        <div class="current-price" id="chartPrice">-</div>
-        <div class="price-change" id="chartChange">-</div>
+  <div class="center-column">
+    <div class="chart-area">
+      <div class="chart-header">
+        <div class="stock-info">
+          <h2 id="chartStockName">-</h2>
+          <div class="current-price" id="chartPrice">-</div>
+          <div class="price-change" id="chartChange">-</div>
+        </div>
+      </div>
+      <div class="chart-canvas-container">
+        <canvas id="priceChart"></canvas>
       </div>
     </div>
-    <div class="chart-canvas-container">
-      <canvas id="priceChart"></canvas>
+    <div class="panel-card positions-card">
+      <h3>保有ポジション</h3>
+      <div class="positions-list" id="positionsList">
+        <div class="no-positions">ポジションなし</div>
+      </div>
     </div>
   </div>
 
@@ -719,19 +758,17 @@ body {
     </div>
 
     <div class="panel-card">
-      <h3>保有ポジション</h3>
-      <div class="positions-list" id="positionsList">
-        <div class="no-positions">ポジションなし</div>
-      </div>
-    </div>
-
-    <div class="panel-card">
       <h3>取引履歴</h3>
       <div class="history-list" id="historyList">
         <div class="no-positions">まだ取引がありません</div>
       </div>
     </div>
   </div>
+</div>
+
+<!-- イベントフラッシュ -->
+<div class="event-flash" id="eventFlash">
+  <div class="event-flash-text" id="eventFlashText"></div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
@@ -1085,6 +1122,7 @@ function updatePrices() {
     activeEvent = { ...ev, startTime: now, endTime: now + ev.durationMs, trendShock };
     lastEventTime = now;
     showToast(`${ev.icon} ${ev.label}`, 'event');
+    showEventFlash(`${ev.icon} ${ev.label}`);
   }
 
   // イベント終了チェック
@@ -1655,6 +1693,22 @@ function showToast(msg, type = 'info') {
   toast.textContent = msg;
   DOM.toasts.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
+}
+
+let eventFlashTimer = null;
+function showEventFlash(text) {
+  const el = document.getElementById('eventFlash');
+  const textEl = document.getElementById('eventFlashText');
+  textEl.textContent = text;
+  // アニメーションリセット
+  textEl.style.animation = 'none';
+  void textEl.offsetWidth;
+  textEl.style.animation = '';
+  el.classList.add('show');
+  clearTimeout(eventFlashTimer);
+  eventFlashTimer = setTimeout(() => {
+    el.classList.remove('show');
+  }, 2000);
 }
 
 // ==================== ゲーム制御 (state machine) ====================
