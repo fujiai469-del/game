@@ -321,6 +321,10 @@ body {
 .toast.success { background: rgba(var(--color-up-rgb),0.15); border: 1px solid rgba(var(--color-up-rgb),0.4); }
 .toast.error { background: rgba(var(--color-down-rgb),0.15); border: 1px solid rgba(var(--color-down-rgb),0.4); }
 .toast.info { background: rgba(123,138,189,0.15); border: 1px solid rgba(123,138,189,0.4); }
+.toast.event {
+  background: rgba(232,197,106,0.2); border: 1px solid rgba(232,197,106,0.5);
+  color: #e8c56a; font-size: 14px; font-weight: 700;
+}
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeOut { to { opacity: 0; } }
 
@@ -757,6 +761,19 @@ const TIME_CONFIGS = {
 const CANDLE_INTERVAL_MS = 1000; // 1秒足
 const MAX_CANDLES = 80;          // 最大表示本数
 
+// ==================== マーケットイベント ====================
+const MARKET_EVENTS = [
+  { type: 'FRB',   label: '速報: FRB要人発言',   icon: '🏛️', volMultiplier: 3.5, durationMs: 8000 },
+  { type: 'EARNINGS', label: '速報: 決算発表',    icon: '📊', volMultiplier: 4.0, durationMs: 6000 },
+  { type: 'GEO',   label: '速報: 地政学リスク',   icon: '🌍', volMultiplier: 5.0, durationMs: 10000 },
+];
+// 10分以上モード限定。最小間隔30秒、1ティックあたり発生確率
+const EVENT_MIN_INTERVAL_MS = 30000;
+const EVENT_FIRE_CHANCE = 0.003;
+
+let activeEvent = null;        // { ...event, startTime, endTime, trendShock }
+let lastEventTime = 0;
+
 // ==================== ゲーム状態 (state machine) ====================
 // states: 'idle' | 'starting' | 'running' | 'ended'
 const gameState = {
@@ -1059,6 +1076,31 @@ function updatePrices() {
   const volScale = config.volScale;
   const now = Date.now();
 
+  // マーケットイベント判定（10分以上モード限定）
+  if (gameState.totalTime >= 600 && !activeEvent
+      && (now - lastEventTime) > EVENT_MIN_INTERVAL_MS
+      && Math.random() < EVENT_FIRE_CHANCE) {
+    const ev = MARKET_EVENTS[Math.floor(Math.random() * MARKET_EVENTS.length)];
+    const trendShock = (Math.random() - 0.5) * 0.006;
+    activeEvent = { ...ev, startTime: now, endTime: now + ev.durationMs, trendShock };
+    lastEventTime = now;
+    showToast(`${ev.icon} ${ev.label}`, 'event');
+  }
+
+  // イベント終了チェック
+  let eventVolMul = 1;
+  let eventTrendShock = 0;
+  if (activeEvent) {
+    if (now >= activeEvent.endTime) {
+      activeEvent = null;
+    } else {
+      // フェードアウト: 残り時間に応じて倍率を線形減衰
+      const remaining = (activeEvent.endTime - now) / activeEvent.durationMs;
+      eventVolMul = 1 + (activeEvent.volMultiplier - 1) * remaining;
+      eventTrendShock = activeEvent.trendShock * remaining;
+    }
+  }
+
   // 足確定チェック
   const candleElapsed = now - candleStartTime;
   const shouldFinalize = candleElapsed >= CANDLE_INTERVAL_MS;
@@ -1068,14 +1110,15 @@ function updatePrices() {
     const d = stockData[s.ticker];
     d.prevPrice = d.price;
 
-    const noise = (Math.random() - 0.5) * 2 * d.volatility * volScale;
+    const effectiveVol = d.volatility * volScale * eventVolMul;
+    const noise = (Math.random() - 0.5) * 2 * effectiveVol;
     d.momentum = d.momentum * 0.95 + noise * 0.05;
 
     let spike = 0;
-    if (Math.random() < 0.005) spike = (Math.random() - 0.5) * d.volatility * volScale * 4;
+    if (Math.random() < 0.005) spike = (Math.random() - 0.5) * effectiveVol * 4;
     if (Math.random() < 0.02) d.microTrend = (Math.random() - 0.5) * 0.002 * volScale;
 
-    const change = d.price * (noise + d.momentum + d.trend * volScale + d.microTrend + spike);
+    const change = d.price * (noise + d.momentum + d.trend * volScale + d.microTrend + spike + eventTrendShock);
     d.price = Math.max(d.price * 0.5, d.price + change);
     d.price = Math.round(d.price * 10) / 10;
 
@@ -1643,6 +1686,8 @@ function startGame() {
   gameState.winCount = 0;
   gameState.maxProfit = 0;
   gameState.selectedStock = 0;
+  activeEvent = null;
+  lastEventTime = 0;
 
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('resultScreen').classList.remove('show');
